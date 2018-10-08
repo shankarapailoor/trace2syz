@@ -25,8 +25,7 @@ const (
 	LEQUALop          //LEQUAL = ==
 
 	exprTypeName    string = "Expression Type"
-	arrayTypeName   string = "Array Type"
-	structTypeName  string = "Struct Type"
+	groupTypeName   string = "Group Type"
 	callTypeName    string = "Call Type"
 	bufferTypeName  string = "Buffer Type"
 	pointerTypeName string = "Pointer Type"
@@ -159,11 +158,11 @@ func GenDefaultIrType(syzType prog.Type) IrType {
 		for i := 0; i < len(straceFields); i++ {
 			straceFields[i] = GenDefaultIrType(a.Fields[i])
 		}
-		return NewStructType(straceFields)
+		return NewGroupType(straceFields)
 	case *prog.ArrayType:
 		straceFields := make([]IrType, 1)
 		straceFields[0] = GenDefaultIrType(a.Type)
-		return NewArrayType(straceFields)
+		return NewGroupType(straceFields)
 	case *prog.ConstType, *prog.ProcType, *prog.LenType, *prog.FlagsType, *prog.IntType:
 		return NewIntsType([]int64{0})
 	case *prog.PtrType:
@@ -198,44 +197,20 @@ func (c *Call) String() string {
 	return buf.String()
 }
 
-type StructType struct {
-	Fields []IrType
-}
-
-func NewStructType(types []IrType) (typ *StructType) {
-	return &StructType{Fields: types}
-}
-
-func (s *StructType) Name() string {
-	return structTypeName
-}
-
-func (s *StructType) String() string {
-	var buf bytes.Buffer
-
-	buf.WriteString("{")
-	for _, field := range s.Fields {
-		buf.WriteString(field.String())
-		buf.WriteString(",")
-	}
-	buf.WriteString("}")
-	return buf.String()
-}
-
-type ArrayType struct {
+type GroupType struct {
 	Elems []IrType
 	Len   int
 }
 
-func NewArrayType(elems []IrType) (typ *ArrayType) {
-	return &ArrayType{Elems: elems, Len: len(elems)}
+func NewGroupType(elems []IrType) (typ *GroupType) {
+	return &GroupType{Elems: elems, Len: len(elems)}
 }
 
-func (a *ArrayType) Name() string {
-	return arrayTypeName
+func (a *GroupType) Name() string {
+	return groupTypeName
 }
 
-func (a *ArrayType) String() string {
+func (a *GroupType) String() string {
 	var buf bytes.Buffer
 
 	buf.WriteString("[")

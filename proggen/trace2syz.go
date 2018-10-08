@@ -235,7 +235,7 @@ func genVma(syzType *prog.VmaType, traceType parser.IrType, ctx *Context) prog.A
 func genArray(syzType *prog.ArrayType, traceType parser.IrType, ctx *Context) prog.Arg {
 	var args []prog.Arg
 	switch a := traceType.(type) {
-	case *parser.ArrayType:
+	case *parser.GroupType:
 		if syzType.Dir() == prog.DirOut {
 			return GenDefaultArg(syzType, ctx)
 		}
@@ -259,12 +259,8 @@ func genStruct(syzType *prog.StructType, traceType parser.IrType, ctx *Context) 
 	traceType = preprocessStruct(syzType, traceType, ctx)
 	args := make([]prog.Arg, 0)
 	switch a := traceType.(type) {
-	case *parser.StructType:
+	case *parser.GroupType:
 		reorderStructFields(syzType, a, ctx)
-		args = append(args, evalFields(syzType.Fields, a.Fields, ctx)...)
-	case *parser.ArrayType:
-		//Syzkaller's pipe definition expects a pipefd struct
-		//But strace returns an array type
 		args = append(args, evalFields(syzType.Fields, a.Elems, ctx)...)
 	case *parser.Field:
 		return genArgs(syzType, a.Val, ctx)
@@ -362,9 +358,9 @@ func identifySockaddrStorage(syzType *prog.UnionType, ctx *Context) int {
 		}
 	}
 	switch strType := straceArg.(type) {
-	case *parser.StructType:
-		for i := range strType.Fields {
-			fieldStr := strType.Fields[i].String()
+	case *parser.GroupType:
+		for i := range strType.Elems {
+			fieldStr := strType.Elems[i].String()
 			if strings.Contains(fieldStr, "AF_INET6") {
 				return field2Opt["in6"]
 			} else if strings.Contains(fieldStr, "AF_INET") {
@@ -390,9 +386,9 @@ func identifySockaddrNetlinkUnion(syzType *prog.UnionType, ctx *Context) int {
 		field2Opt[field.FieldName()] = i
 	}
 	switch a := ctx.CurrentStraceArg.(type) {
-	case *parser.StructType:
-		if len(a.Fields) > 2 {
-			switch b := a.Fields[1].(type) {
+	case *parser.GroupType:
+		if len(a.Elems) > 2 {
+			switch b := a.Elems[1].(type) {
 			case parser.Expression:
 				pid := b.Eval(ctx.Target)
 				if pid > 0 {
@@ -432,7 +428,7 @@ func identifyIfrIfruUnion(ctx *Context) int {
 
 func identifyIfconfUnion(ctx *Context) int {
 	switch ctx.CurrentStraceArg.(type) {
-	case *parser.StructType:
+	case *parser.GroupType:
 		return 1
 	default:
 		return 0
@@ -478,9 +474,7 @@ func genBuffer(syzType *prog.BufferType, traceType parser.IrType, ctx *Context) 
 		bArr := make([]byte, 8)
 		binary.LittleEndian.PutUint64(bArr, val)
 		bufVal = bArr
-	case *parser.ArrayType:
-		//
-	case *parser.StructType:
+	case *parser.GroupType:
 		return GenDefaultArg(syzType, ctx)
 	case *parser.Field:
 		return genArgs(syzType, a.Val, ctx)
@@ -542,23 +536,19 @@ func genConst(syzType prog.Type, traceType parser.IrType, ctx *Context) prog.Arg
 		return prog.MakeConstArg(syzType, a.Eval(ctx.Target))
 	case *parser.DynamicType:
 		return prog.MakeConstArg(syzType, a.BeforeCall.Eval(ctx.Target))
-	case *parser.ArrayType:
+	case *parser.GroupType:
 		/*
-			Sometimes strace represents a pointer to int as [0] which gets parsed
-			as Array([0], len=1). A good example is ioctl(3, FIONBIO, [1]).
+				Sometimes strace represents a pointer to int as [0] which gets parsed
+				as Array([0], len=1). A good example is ioctl(3, FIONBIO, [1]). We may also have an union int type that
+			    is a represented as a struct in strace e.g.
+				sigev_value={sival_int=-2123636944, sival_ptr=0x7ffd816bdf30}
+				For now we choose the first option
 		*/
 		if a.Len == 0 {
 			log.Fatalf("Parsing const type. Got array type with len 0: %#v", ctx)
 		}
 		return genConst(syzType, a.Elems[0], ctx)
-	case *parser.StructType:
-		/*
-			Sometimes system calls have an int type that is actually a union. Strace will represent the union
-			like a struct e.g.
-			sigev_value={sival_int=-2123636944, sival_ptr=0x7ffd816bdf30}
-			For now we choose the first option
-		*/
-		return genConst(syzType, a.Fields[0], ctx)
+
 	case *parser.Field:
 		//We have an argument of the form sin_port=IntType(0)
 		return genArgs(syzType, a.Val, ctx)
@@ -667,7 +657,7 @@ func addr(ctx *Context, syzType prog.Type, size uint64, data prog.Arg) prog.Arg 
 	return arg
 }
 
-func reorderStructFields(syzType *prog.StructType, traceType *parser.StructType, ctx *Context) {
+func reorderStructFields(syzType *prog.StructType, traceType *parser.GroupType, ctx *Context) {
 	/*
 		Sometimes strace reports struct fields out of order compared to Syzkaller.
 		Example: 5704  bind(3, {sa_family=AF_INET6,
@@ -680,20 +670,20 @@ func reorderStructFields(syzType *prog.StructType, traceType *parser.StructType,
 	switch syzType.TypeName {
 	case "sockaddr_in6":
 		log.Logf(5, "Reordering in6")
-		field2 := traceType.Fields[2]
-		traceType.Fields[2] = traceType.Fields[3]
-		traceType.Fields[3] = field2
+		field2 := traceType.Elems[2]
+		traceType.Elems[2] = traceType.Elems[3]
+		traceType.Elems[3] = field2
 	case "bpf_insn_generic", "bpf_insn_exit", "bpf_insn_alu", "bpf_insn_jmp", "bpf_insn_ldst":
 		log.Logf(2, "bpf_insn_generic size: %d, typsize: %d\n", syzType.Size(), syzType.TypeSize)
-		field1 := traceType.Fields[1].(parser.Expression)
-		field2 := traceType.Fields[2].(parser.Expression)
+		field1 := traceType.Elems[1].(parser.Expression)
+		field2 := traceType.Elems[2].(parser.Expression)
 		reg := (field1.Eval(ctx.Target)) | (field2.Eval(ctx.Target) << 4)
-		newFields := make([]parser.IrType, len(traceType.Fields)-1)
-		newFields[0] = traceType.Fields[0]
+		newFields := make([]parser.IrType, len(traceType.Elems)-1)
+		newFields[0] = traceType.Elems[0]
 		newFields[1] = parser.NewIntsType([]int64{int64(reg)})
-		newFields[2] = traceType.Fields[3]
-		newFields[3] = traceType.Fields[4]
-		traceType.Fields = newFields
+		newFields[2] = traceType.Elems[3]
+		newFields[3] = traceType.Elems[4]
+		traceType.Elems = newFields
 	}
 }
 

@@ -21,14 +21,14 @@ func preprocessStruct(syzType *prog.StructType, traceType parser.IrType, ctx *Co
 
 func bpfFramedProgramHandler(syzType *prog.StructType, traceType parser.IrType, _ *Context) parser.IrType {
 	switch a := traceType.(type) {
-	case *parser.ArrayType:
+	case *parser.GroupType:
 		if a.Len > 1 {
 			straceStructArgs := make([]parser.IrType, len(syzType.Fields))
 			straceStructArgs[1] = a
 			straceArg0 := parser.GenDefaultIrType(syzType.Fields[0])
 			straceStructArgs[0] = straceArg0
 			straceStructArgs = append(straceStructArgs, parser.GenDefaultIrType(syzType.Fields[1]))
-			return parser.NewStructType(straceStructArgs)
+			return parser.NewGroupType(straceStructArgs)
 		}
 		log.Fatalf("Failed to parse bpfFramedProgramHandler. Strace array needs at least 2 elements")
 	}

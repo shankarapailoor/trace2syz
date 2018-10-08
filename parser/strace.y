@@ -20,8 +20,7 @@ import (
     val_int_type *intType
     val_identifiers []*BufferType
     val_buf_type *BufferType
-    val_struct_type *StructType
-    val_array_type *ArrayType
+    val_group_type *GroupType
     val_pointer_type *PointerType
     val_flag_type *flagType
     val_type IrType
@@ -38,8 +37,7 @@ import (
 %type <val_identifiers> identifiers
 %type <val_int_type> int_type
 %type <val_buf_type> buf_type
-%type <val_struct_type> struct_type
-%type <val_array_type> array_type
+%type <val_group_type> group_type
 %type <val_flag_type> flag_type
 %type <val_call> call_type
 %type <val_parenthetical> parenthetical, parentheticals
@@ -136,8 +134,7 @@ parenthetical:
     | LSHIFT {$$ = newParenthetical();}
     | RSHIFT {$$ = newParenthetical();}
     | IDENTIFIER {$$ = newParenthetical();}
-    | struct_type {$$ = newParenthetical();}
-    | array_type {$$ = newParenthetical();}
+    | group_type {$$ = newParenthetical();}
     | flag_type {$$ = newParenthetical();}
     | int_type {$$ = newParenthetical();}
 
@@ -151,12 +148,11 @@ type:
     buf_type {$$ = $1}
     | field_type {$$ = $1}
     | pointer_type {$$ = $1}
-    | array_type {$$ = $1}
-    | struct_type {$$ = $1}
+    | group_type {$$ = $1}
     | call_type {$$ = $1}
     | expr_type {$$ = $1}
     | expr_type ARROW type {$$ = newDynamicType($1, $3)}
-    | ONESCOMP array_type {$$ = $2}
+    | ONESCOMP group_type {$$ = $2}
 
 
 expr_type:
@@ -195,12 +191,10 @@ pointer_type:
     | AND UINT EQUALS type {$$ = NewPointerType($2, $4)}
     | NULL {$$ = nullPointer()}
 
-array_type:
-    LBRACKET_SQUARE types RBRACKET_SQUARE {arr := NewArrayType($2); $$ = arr}
-
-struct_type:
-    LBRACKET types RBRACKET {$$ = NewStructType($2)}
-    | LBRACKET types COMMA RBRACKET {$$ = NewStructType($2)}
+group_type:
+    LBRACKET_SQUARE types RBRACKET_SQUARE {$$ = NewGroupType($2)}
+    | LBRACKET types RBRACKET {$$ = NewGroupType($2)}
+    | LBRACKET types COMMA RBRACKET {$$ = NewGroupType($2)}
 
 field_type:
      IDENTIFIER EQUALS %prec NOTYPE {$$ = newField($1, nil);}

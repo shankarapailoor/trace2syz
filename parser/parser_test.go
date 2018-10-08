@@ -135,9 +135,9 @@ func TestParseIrTypes(t *testing.T) {
 		irType string
 	}
 	test1 := irTest{`open(MAKEDEV(1)) = 0`, exprTypeName}
-	test2 := irTest{`open({1, 2, 3}) = 0`, structTypeName}
-	test3 := irTest{`open([1, 2, 3]) = 0`, arrayTypeName}
-	test4 := irTest{`open([1 2]) = 0`, arrayTypeName}
+	test2 := irTest{`open({1, 2, 3}) = 0`, groupTypeName}
+	test3 := irTest{`open([1, 2, 3]) = 0`, groupTypeName}
+	test4 := irTest{`open([1 2]) = 0`, groupTypeName}
 	test5 := irTest{`open(TCSETS or TCGETS) = 0`, exprTypeName}
 	tests := []irTest{test1, test2, test3, test4, test5}
 	for i, test := range tests {
