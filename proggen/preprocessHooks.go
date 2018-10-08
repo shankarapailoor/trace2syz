@@ -115,6 +115,7 @@ func (c *CallVariantMap) buildConnectCallMap(variants []*prog.Syscall) {
 	}
 }
 
+//Build constructs the variant mappings from Syzkaller target
 func (c *CallVariantMap) Build(target *prog.Target) {
 	callVariants := make(map[string][]*prog.Syscall)
 	for _, call := range target.Syscalls {

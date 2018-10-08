@@ -24,14 +24,14 @@ var (
 )
 
 const (
-	OS               = "linux" //Target OS
-	Arch             = "amd64" //Target architecture
+	goos             = "linux" //Target OS
+	arch             = "amd64" //Target architecture
 	currentDBVersion = 3       //Marked as minimized
 )
 
 func main() {
 	flag.Parse()
-	target, err := prog.GetTarget(OS, Arch)
+	target, err := prog.GetTarget(goos, arch)
 	if err != nil {
 		log.Fatalf("error getting target: %v", err.Error())
 	}
