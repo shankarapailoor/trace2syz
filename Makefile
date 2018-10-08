@@ -1,9 +1,13 @@
+.PHONY: all test linter trace2syz clean
+
+all: trace2syz
+
 test:
 	go test ./...
 linter:
 	gometalinter.v2 ./...
 
-default:
+trace2syz:
 	(cd parser; ragel -Z -G2 -o lex.go straceLex.rl)
 	(cd parser; goyacc -o strace.go -p Strace strace.y)
 	mkdir -p bin deserialized

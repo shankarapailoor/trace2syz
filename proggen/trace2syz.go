@@ -111,10 +111,6 @@ func GenSyzProg(trace *parser.Trace, target *prog.Target, variantMap *CallVarian
 	ctx.Prog = syzProg
 	var call *prog.Call
 	for _, sCall := range trace.Calls {
-		ctx.CurrentStraceCall = sCall
-		if _, ok := utils.Unsupported[sCall.CallName]; ok {
-			continue
-		}
 		if sCall.Paused {
 			/*Probably a case where the call was killed by a signal like the following
 			2179  wait4(2180,  <unfinished ...>
@@ -156,7 +152,7 @@ func genCall(ctx *Context) *prog.Call {
 	}
 	retCall.Ret = prog.MakeReturnArg(ctx.CurrentSyzCall.Meta.Ret)
 
-	if call := ParseMemoryCall(ctx); call != nil {
+	if call := parseMemoryCall(ctx); call != nil {
 		ctx.Target.SanitizeCall(call)
 		return call
 	}
@@ -175,7 +171,6 @@ func genCall(ctx *Context) *prog.Call {
 
 func genResult(syzType prog.Type, straceRet int64, ctx *Context) {
 	if straceRet > 0 {
-		//TODO: This is a hack NEED to refacto lexer to parser return values into strace types
 		straceExpr := parser.NewIntsType([]int64{straceRet})
 		switch syzType.(type) {
 		case *prog.ResourceType:
@@ -572,7 +567,7 @@ func genConst(syzType prog.Type, traceType parser.IrType, ctx *Context) prog.Arg
 
 func genResource(syzType *prog.ResourceType, traceType parser.IrType, ctx *Context) prog.Arg {
 	if syzType.Dir() == prog.DirOut {
-		log.Logf(2, "Resource returned by call argument: %s\n", traceType.String())
+		log.Logf(2, "Resource returned by call argument: %s", traceType.String())
 		res := prog.MakeResultArg(syzType, nil, syzType.Default())
 		ctx.ReturnCache.cache(syzType, traceType, res)
 		return res
@@ -674,7 +669,7 @@ func reorderStructFields(syzType *prog.StructType, traceType *parser.GroupType, 
 		traceType.Elems[2] = traceType.Elems[3]
 		traceType.Elems[3] = field2
 	case "bpf_insn_generic", "bpf_insn_exit", "bpf_insn_alu", "bpf_insn_jmp", "bpf_insn_ldst":
-		log.Logf(2, "bpf_insn_generic size: %d, typsize: %d\n", syzType.Size(), syzType.TypeSize)
+		log.Logf(2, "bpf_insn_generic size: %d, typsize: %d", syzType.Size(), syzType.TypeSize)
 		field1 := traceType.Elems[1].(parser.Expression)
 		field2 := traceType.Elems[2].(parser.Expression)
 		reg := (field1.Eval(ctx.Target)) | (field2.Eval(ctx.Target) << 4)
@@ -689,6 +684,9 @@ func reorderStructFields(syzType *prog.StructType, traceType *parser.GroupType, 
 
 func shouldSkip(ctx *Context) bool {
 	syscall := ctx.CurrentStraceCall
+	if utils.ShouldSkip[syscall.CallName] {
+		return true
+	}
 	switch syscall.CallName {
 	case "write":
 		switch a := syscall.Args[0].(type) {

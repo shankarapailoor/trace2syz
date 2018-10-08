@@ -1,20 +1,22 @@
 package utils
 
 var (
-	Unsupported = map[string]bool{
+	//List of system calls which we should skip when parsing
+	//Some of these are unsupported or not worth executing
+	ShouldSkip = map[string]bool{
 		"brk":                    true,
 		"":                       true,
-		"execve":                 true, // unsupported
-		"access":                 true, // unsupported
-		"gettimeofday":           true, // unsupported
-		"kill":                   true, // unsupported
+		"execve":                 true,
+		"access":                 true,
+		"gettimeofday":           true,
+		"kill":                   true,
 		"arch_prctl":             true,
-		"getcwd":                 true, // unsupported
-		"setdomainname":          true, // unsupported
-		"reboot":                 true, // unsupported
-		"getppid":                true, // unsupported
-		"umask":                  true, // unsupported
-		"adjtimex":               true, // unsupported
+		"getcwd":                 true,
+		"setdomainname":          true,
+		"reboot":                 true,
+		"getppid":                true,
+		"umask":                  true,
+		"adjtimex":               true,
 		"nanosleep":              true,
 		"wait4":                  true,
 		"wait":                   true,
@@ -26,9 +28,9 @@ var (
 		"rt_sigqueueinfo":        true,
 		"rt_sigsuspend":          true,
 		"tgkill":                 true,
-		"sysfs":                  true, // unsupported
-		"clone":                  true, // unsupported
-		"newfstatat":             true, // unsupported
+		"sysfs":                  true,
+		"clone":                  true,
+		"newfstatat":             true,
 		"getsid":                 true,
 		"getcpu":                 true,
 		"mmap":                   true,

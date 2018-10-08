@@ -19,7 +19,7 @@ import (
 
 var (
 	flagFile   = flag.String("file", "", "file to parse")
-	flagDir    = flag.String("dir", "", "director to parse")
+	flagDir    = flag.String("dir", "", "directory to parse")
 	variantMap = proggen.NewCall2VariantMap()
 )
 
