@@ -122,14 +122,14 @@ type Syscall struct {
 
 //NewSyscall - constructor
 func NewSyscall(pid int64, name string, args []IrType, ret int64, paused, resumed bool) (sys *Syscall) {
-	sys = new(Syscall)
-	sys.CallName = name
-	sys.Args = args
-	sys.Pid = pid
-	sys.Ret = ret
-	sys.Paused = paused
-	sys.Resumed = resumed
-	return
+	return &Syscall{
+		CallName: name,
+		Args:     args,
+		Pid:      pid,
+		Ret:      ret,
+		Paused:   paused,
+		Resumed:  resumed,
+	}
 }
 
 //String
@@ -181,11 +181,8 @@ type Call struct {
 	Args     []IrType
 }
 
-func newCallType(name string, args []IrType) (typ *Call) {
-	typ = new(Call)
-	typ.CallName = name
-	typ.Args = args
-	return
+func newCallType(name string, args []IrType) *Call {
+	return &Call{CallName: name, Args: args}
 }
 
 func (c *Call) Name() string {
@@ -206,9 +203,7 @@ type StructType struct {
 }
 
 func NewStructType(types []IrType) (typ *StructType) {
-	typ = new(StructType)
-	typ.Fields = types
-	return
+	return &StructType{Fields: types}
 }
 
 func (s *StructType) Name() string {
@@ -233,10 +228,7 @@ type ArrayType struct {
 }
 
 func NewArrayType(elems []IrType) (typ *ArrayType) {
-	typ = new(ArrayType)
-	typ.Elems = elems
-	typ.Len = len(elems)
-	return
+	return &ArrayType{Elems: elems, Len: len(elems)}
 }
 
 func (a *ArrayType) Name() string {
@@ -260,11 +252,8 @@ type Field struct {
 	Val IrType
 }
 
-func newField(key string, val IrType) (f *Field) {
-	f = new(Field)
-	f.Key = key
-	f.Val = val
-	return
+func newField(key string, val IrType) *Field {
+	return &Field{Key: key, Val: val}
 }
 
 func (f *Field) Name() string {
@@ -295,11 +284,7 @@ type binOp struct {
 }
 
 func newBinop(leftOperand, rightOperand IrType, Op Operation) *binOp {
-	b := new(binOp)
-	b.LeftOp = leftOperand.(Expression)
-	b.RightOp = rightOperand.(Expression)
-	b.Op = Op
-	return b
+	return &binOp{LeftOp: leftOperand.(Expression), RightOp: rightOperand.(Expression), Op: Op}
 }
 
 func (b *binOp) Eval(target *prog.Target) uint64 {
@@ -383,11 +368,8 @@ type macroType struct {
 	Args      []IrType
 }
 
-func newMacroType(name string, args []IrType) (typ *macroType) {
-	typ = new(macroType)
-	typ.MacroName = name
-	typ.Args = args
-	return
+func newMacroType(name string, args []IrType) *macroType {
+	return &macroType{MacroName: name, Args: args}
 }
 
 func (m *macroType) String() string {
@@ -536,10 +518,8 @@ func (f *flagType) String() string {
 	return f.Val
 }
 
-func newBufferType(val string) (typ *BufferType) {
-	typ = new(BufferType)
-	typ.Val = val
-	return
+func newBufferType(val string) *BufferType {
+	return &BufferType{Val: val}
 }
 
 func (b *BufferType) Name() string {
@@ -555,18 +535,12 @@ type PointerType struct {
 	Res     IrType
 }
 
-func NewPointerType(addr uint64, res IrType) (typ *PointerType) {
-	typ = new(PointerType)
-	typ.Res = res
-	typ.Address = addr
-	return
+func NewPointerType(addr uint64, res IrType) *PointerType {
+	return &PointerType{Res: res, Address: addr}
 }
 
 func nullPointer() (typ *PointerType) {
-	typ = new(PointerType)
-	typ.Address = 0
-	typ.Res = newBufferType("")
-	return
+	return &PointerType{Res: newBufferType(""), Address: 0}
 }
 
 func (p *PointerType) IsNull() bool {
@@ -581,6 +555,5 @@ func (p *PointerType) String() string {
 	buf := new(bytes.Buffer)
 	fmt.Fprintf(buf, "Address: %d\n", p.Address)
 	fmt.Fprintf(buf, "Res: %s\n", p.Res.String())
-
 	return buf.String()
 }
