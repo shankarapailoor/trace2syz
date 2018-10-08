@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"github.com/google/syzkaller/pkg/log"
 	"github.com/google/syzkaller/prog"
-	"github.com/shankarapailoor/moonshine/trace2syz/trace2syz/utils"
+	"github.com/shankarapailoor/trace2syz/utils"
 	"strconv"
 )
 

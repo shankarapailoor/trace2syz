@@ -2,7 +2,6 @@ package parser
 
 import (
 	"bufio"
-	"fmt"
 	"github.com/google/syzkaller/pkg/log"
 	"io/ioutil"
 	"strconv"
@@ -16,7 +15,6 @@ const (
 	sysrestart    = "ERESTART"       //SYSRESTART corresponds to the error code of ERESTART.
 	signalPlus    = "+++"            //SignalPlus marks +++
 	signalMinus   = "---"            //SignalPlus marks ---
-	Strace        = "strace"         //Strace
 )
 
 func parseCoverage(line string) []uint64 {
