@@ -58,7 +58,7 @@ func ParseMmap(mmap *prog.Syscall, syscall *parser.Syscall, ctx *Context) *prog.
 		prog.MakeConstArg(mmap.Args[5], 0),
 	}
 	//All mmaps have fixed mappings in syzkaller
-	ctx.State.Tracker.createMapping(call, len(ctx.Prog.Calls), call.Args[0], start, start+length)
+	ctx.Tracker.createMapping(call, len(ctx.Prog.Calls), call.Args[0], start, start+length)
 	return call
 }
 
@@ -92,7 +92,7 @@ func ParseMremap(mremap *prog.Syscall, syscall *parser.Syscall, ctx *Context) *p
 		destAddrArg,
 	}
 	//All mmaps have fixed mappings in syzkaller
-	ctx.State.Tracker.createMapping(call, len(ctx.Prog.Calls), call.Args[4], destAddr, destAddr+newSz)
+	ctx.Tracker.createMapping(call, len(ctx.Prog.Calls), call.Args[4], destAddr, destAddr+newSz)
 	return call
 }
 
@@ -263,10 +263,10 @@ func ParseShmat(shmat *prog.Syscall, syscall *parser.Syscall, ctx *Context) *pro
 	ctx.ReturnCache.cache(call.Ret.Type(), straceRet, call.Ret)
 
 	length := uint64(4096)
-	if req := ctx.State.Tracker.findShmRequest(shmid); req != nil {
+	if req := ctx.Tracker.findShmRequest(shmid); req != nil {
 		length = req.getSize()
 	}
-	ctx.State.Tracker.createMapping(call, len(ctx.Prog.Calls), call.Args[1], address, address+length)
+	ctx.Tracker.createMapping(call, len(ctx.Prog.Calls), call.Args[1], address, address+length)
 	return call
 }
 
@@ -291,7 +291,7 @@ func ParseAddr(length uint64, syzType prog.Type, traceType parser.IrType, ctx *C
 }
 
 func AddDependency(start, length uint64, addr prog.Arg, ctx *Context) {
-	if mapping := ctx.State.Tracker.findLatestOverlappingVMA(start); mapping != nil {
+	if mapping := ctx.Tracker.findLatestOverlappingVMA(start); mapping != nil {
 		dependsOn := make(map[*prog.Call]int)
 		dependsOn[mapping.getCall()] = mapping.getCallIdx()
 		for _, dep := range mapping.getUsedBy() {

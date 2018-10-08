@@ -338,7 +338,7 @@ func shmget(ctx *Context) {
 	switch a := ctx.CurrentStraceCall.Args[1].(type) {
 	case parser.Expression:
 		size := a.Eval(ctx.Target)
-		ctx.State.Tracker.addShmRequest(uint64(ctx.CurrentStraceCall.Ret), size)
+		ctx.Tracker.addShmRequest(uint64(ctx.CurrentStraceCall.Ret), size)
 	default:
 		log.Fatalf("shmctl could not evaluate size of buffer: %#v\n", a)
 	}

@@ -31,7 +31,6 @@ const (
 	bufferTypeName  string = "Buffer Type"
 	pointerTypeName string = "Pointer Type"
 	flagTypeName    string = "Flag Type"
-	ipTypeName      string = "Ip Type"
 )
 
 //TraceTree struct contains intermediate representation of trace
@@ -584,22 +583,4 @@ func (p *PointerType) String() string {
 	fmt.Fprintf(buf, "Res: %s\n", p.Res.String())
 
 	return buf.String()
-}
-
-type IPType struct {
-	Str string
-}
-
-func newIPType(val string) (typ *IPType) {
-	typ = new(IPType)
-	typ.Str = val
-	return
-}
-
-func (i *IPType) Name() string {
-	return ipTypeName
-}
-
-func (i *IPType) String() string {
-	return fmt.Sprintf("Ip type :%s", i.Str)
 }

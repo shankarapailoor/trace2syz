@@ -65,8 +65,8 @@ type Context struct {
 	CurrentStraceCall *parser.Syscall
 	CurrentSyzCall    *prog.Call
 	CurrentStraceArg  parser.IrType
-	State             *State
 	Target            *prog.Target
+	Tracker           *MemoryTracker
 	CallToCover       map[*prog.Call][]uint64
 	Call2Variant      *CallVariantMap
 	DependsOn         map[*prog.Call]map[*prog.Call]int
@@ -76,7 +76,7 @@ func newContext(target *prog.Target, variantMap *CallVariantMap) (ctx *Context) 
 	ctx = &Context{}
 	ctx.ReturnCache = newRCache()
 	ctx.CurrentStraceCall = nil
-	ctx.State = newState(target)
+	ctx.Tracker = newTracker()
 	ctx.CurrentStraceArg = nil
 	ctx.Target = target
 	ctx.CallToCover = make(map[*prog.Call][]uint64)
@@ -86,11 +86,11 @@ func newContext(target *prog.Target, variantMap *CallVariantMap) (ctx *Context) 
 }
 
 func (ctx *Context) FillOutMemory() error {
-	err := ctx.State.Tracker.fillOutMemory(ctx.Prog)
+	err := ctx.Tracker.fillOutMemory(ctx.Prog)
 	if err != nil {
 		return err
 	}
-	totalMemory := ctx.State.Tracker.getTotalMemoryAllocations(ctx.Prog)
+	totalMemory := ctx.Tracker.getTotalMemoryAllocations(ctx.Prog)
 	log.Logf(2, "Total memory for program is: %d", totalMemory)
 	if totalMemory == 0 {
 		log.Logf(1, "Program requires no mmaps", totalMemory)
@@ -134,7 +134,6 @@ func GenSyzProg(trace *parser.Trace, target *prog.Target, variantMap *CallVarian
 		}
 
 		ctx.CallToCover[call] = sCall.Cover
-		ctx.State.analyze(call)
 		ctx.Target.AssignSizesCall(call)
 		syzProg.Calls = append(syzProg.Calls, call)
 	}
@@ -229,7 +228,7 @@ func genVma(syzType *prog.VmaType, traceType parser.IrType, ctx *Context) prog.A
 		npages = syzType.RangeEnd
 	}
 	arg := prog.MakeVmaPointerArg(syzType, 0, npages)
-	ctx.State.Tracker.addAllocation(ctx.CurrentSyzCall, ctx.Target.PageSize, arg)
+	ctx.Tracker.addAllocation(ctx.CurrentSyzCall, ctx.Target.PageSize, arg)
 	return arg
 }
 
@@ -664,7 +663,7 @@ func GenDefaultArg(syzType prog.Type, ctx *Context) prog.Arg {
 
 func addr(ctx *Context, syzType prog.Type, size uint64, data prog.Arg) prog.Arg {
 	arg := prog.MakePointerArg(syzType, uint64(0), data)
-	ctx.State.Tracker.addAllocation(ctx.CurrentSyzCall, size, arg)
+	ctx.Tracker.addAllocation(ctx.CurrentSyzCall, size, arg)
 	return arg
 }
 

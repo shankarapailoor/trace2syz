@@ -25,7 +25,6 @@ import (
     val_pointer_type *PointerType
     val_flag_type *flagType
     val_type IrType
-    val_ip_type *IPType
     val_types []IrType
     val_parenthetical *parenthetical
     val_syscall *Syscall
@@ -47,7 +46,6 @@ import (
 %type <val_macro> macro_type
 %type <val_type> type, expr_type, flags, ints
 %type <val_pointer_type> pointer_type
-%type <val_ip_type> ip_type
 %type <val_types> types
 %type <val_syscall> syscall
 
@@ -156,7 +154,6 @@ type:
     | array_type {$$ = $1}
     | struct_type {$$ = $1}
     | call_type {$$ = $1}
-    | ip_type {$$ = $1}
     | expr_type {$$ = $1}
     | expr_type ARROW type {$$ = newDynamicType($1, $3)}
     | ONESCOMP array_type {$$ = $2}
@@ -215,6 +212,9 @@ field_type:
 buf_type:
     STRING_LITERAL {$$ = newBufferType($1)}
     | DATETIME {$$ = newBufferType($1)}
+    | MAC {$$ = newBufferType($1)}
+    | IPV4 {$$ = newBufferType($1)}
+    | IPV6 {$$ = newBufferType($1)}
 
 
 int_type:
@@ -223,11 +223,6 @@ int_type:
 
 flag_type:
       FLAG {$$ = newFlagType($1)}
-
-ip_type:
-    IPV4 {$$ = newIPType($1)}
-    | IPV6 {$$ = newIPType($1)}
-    | MAC {$$ = newIPType($1)}
 
 identifiers:
     IDENTIFIER {ids := make([]*BufferType, 0); ids = append(ids, newBufferType($1)); $$ = ids}

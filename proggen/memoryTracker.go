@@ -160,13 +160,14 @@ func (m *MemoryTracker) addAllocation(call *prog.Call, size uint64, arg prog.Arg
 }
 
 func (m *MemoryTracker) fillOutMemory(prog *prog.Prog) (err error) {
+	pageSize := prog.Target.PageSize
 	var offset uint64
 	if offset, err = m.fillOutPtrArgs(prog); err != nil {
 		return
 	}
 
-	if offset%PageSize > 0 {
-		offset = (offset/PageSize + 1) * PageSize
+	if offset%pageSize > 0 {
+		offset = (offset/pageSize + 1) * pageSize
 	}
 
 	if err = m.fillOutMmaps(offset); err != nil {
@@ -177,7 +178,7 @@ func (m *MemoryTracker) fillOutMemory(prog *prog.Prog) (err error) {
 
 func (m *MemoryTracker) fillOutPtrArgs(p *prog.Prog) (uint64, error) {
 	offset := uint64(0)
-
+	pageSize := p.Target.PageSize
 	for _, call := range p.Calls {
 		if _, ok := m.allocations[call]; !ok {
 			continue
@@ -201,8 +202,8 @@ func (m *MemoryTracker) fillOutPtrArgs(p *prog.Prog) (uint64, error) {
 		}
 	}
 
-	if offset%PageSize > 0 {
-		offset = (offset/PageSize + 1) * PageSize
+	if offset%pageSize > 0 {
+		offset = (offset/pageSize + 1) * pageSize
 	}
 
 	return offset, nil
@@ -236,6 +237,7 @@ func (m *MemoryTracker) fillOutMmaps(offset uint64) error {
 //of every system call. Currently we are allocating memory in a naive fashion by providing
 //a new memory region for every every argument. However, this can be significantly improved
 func (m *MemoryTracker) getTotalMemoryAllocations(p *prog.Prog) uint64 {
+	pageSize := p.Target.PageSize
 	sum := uint64(0)
 	for _, call := range p.Calls {
 		if _, ok := m.allocations[call]; !ok {
@@ -245,8 +247,8 @@ func (m *MemoryTracker) getTotalMemoryAllocations(p *prog.Prog) uint64 {
 			sum += a.numBytes
 		}
 	}
-	if sum%PageSize > 0 {
-		sum = (sum/PageSize + 1) * PageSize
+	if sum%pageSize > 0 {
+		sum = (sum/pageSize + 1) * pageSize
 	}
 	return sum
 }

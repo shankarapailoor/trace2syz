@@ -4,10 +4,6 @@ import (
 	"github.com/google/syzkaller/prog"
 )
 
-const (
-	PageSize = 4 << 10
-)
-
 type State struct {
 	Target      *prog.Target
 	Files       map[string][]*prog.Call

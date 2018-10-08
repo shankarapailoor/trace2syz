@@ -90,8 +90,8 @@ func inetAddr(syzType prog.Type, traceType *parser.Call, ctx *Context) prog.Arg 
 		log.Fatalf("inetAddr should only have one argument. Found: %d\n", len(traceType.Args))
 	}
 	switch a := traceType.Args[0].(type) {
-	case *parser.IPType:
-		ip = ip4Addr(a.Str)
+	case *parser.BufferType:
+		ip = ip4Addr(a.Val)
 	default:
 		log.Fatalf("Parsing inet_addr and inner arg has non ipv4 type")
 	}
@@ -124,8 +124,8 @@ func inetPton(syzType prog.Type, traceType *parser.Call, ctx *Context) prog.Arg 
 		log.Fatalf("InetPton expects 3 args: %v.", traceType.Args)
 	}
 	switch a := traceType.Args[1].(type) {
-	case *parser.IPType:
-		switch a.Str {
+	case *parser.BufferType:
+		switch a.Val {
 		case "::":
 			optType = unionType.Fields[0]
 		case "::1":
