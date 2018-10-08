@@ -329,7 +329,7 @@ func (u *unOp) String() string {
 	return fmt.Sprintf("op1: %v operand: %v\n", u.operand, u.op)
 }
 
-//Represents cases where strace shows the before system call and after
+//DynamicType represents cases where strace shows the before system call and after
 //E.g. <... getsockname resumed> {sa_family=AF_INET6,..., sin6_scope_id=0}, [112->28]
 type DynamicType struct {
 	BeforeCall Expression
@@ -397,7 +397,7 @@ func newParenthetical() *parenthetical {
 	return &parenthetical{tmp: "tmp"}
 }
 
-//Contains strings
+//BufferType contains strings
 type BufferType struct {
 	Val string
 }
@@ -531,7 +531,7 @@ func (f *flagType) string() string {
 	return f.Val
 }
 
-//PointerType
+//PointerType holds pointers from strace e.g. NULL, 0x7f24234234, &2342342={...}
 type PointerType struct {
 	Address uint64
 	Res     IrType
@@ -546,6 +546,7 @@ func nullPointer() (typ *PointerType) {
 	return &PointerType{Res: newBufferType(""), Address: 0}
 }
 
+//IsNull checks if pointer is null
 func (p *PointerType) IsNull() bool {
 	return p.Address == 0
 }
