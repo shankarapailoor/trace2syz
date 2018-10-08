@@ -45,6 +45,7 @@ func parseSyscall(scanner *bufio.Scanner) (int, *Syscall) {
 	return ret, lex.result
 }
 
+//ParseLoop parses each line of a strace file in a loop
 func ParseLoop(data string) (tree *TraceTree) {
 	tree = NewTraceTree()
 	//Creating the process tree

@@ -184,7 +184,7 @@ func genResult(syzType prog.Type, straceRet int64, ctx *Context) {
 func genArgs(syzType prog.Type, traceArg parser.IrType, ctx *Context) prog.Arg {
 	if traceArg == nil {
 		log.Logf(3, "Parsing syzType: %s, traceArg is nil. Generating default arg...", syzType.Name())
-		return GenDefaultArg(syzType, ctx)
+		return genDefaultArg(syzType, ctx)
 	}
 	ctx.CurrentStraceArg = traceArg
 	log.Logf(3, "Parsing Arg of syz type: %s, ir type: %s", syzType.Name(), traceArg.Name())
@@ -193,7 +193,7 @@ func genArgs(syzType prog.Type, traceArg parser.IrType, ctx *Context) prog.Arg {
 	case *prog.IntType, *prog.ConstType, *prog.FlagsType, *prog.CsumType:
 		return genConst(a, traceArg, ctx)
 	case *prog.LenType:
-		return GenDefaultArg(syzType, ctx)
+		return genDefaultArg(syzType, ctx)
 	case *prog.ProcType:
 		return parseProc(a, traceArg, ctx)
 	case *prog.ResourceType:
@@ -232,7 +232,7 @@ func genArray(syzType *prog.ArrayType, traceType parser.IrType, ctx *Context) pr
 	switch a := traceType.(type) {
 	case *parser.GroupType:
 		if syzType.Dir() == prog.DirOut {
-			return GenDefaultArg(syzType, ctx)
+			return genDefaultArg(syzType, ctx)
 		}
 		for i := 0; i < a.Len; i++ {
 			args = append(args, genArgs(syzType.Type, a.Elems[i], ctx))
@@ -240,7 +240,7 @@ func genArray(syzType *prog.ArrayType, traceType parser.IrType, ctx *Context) pr
 	case *parser.Field:
 		return genArray(syzType, a.Val, ctx)
 	case *parser.PointerType, parser.Expression, *parser.BufferType:
-		return GenDefaultArg(syzType, ctx)
+		return genDefaultArg(syzType, ctx)
 	default:
 		log.Fatalf("Error parsing Array: %s with Wrong Type: %s", syzType.FldName, traceType.Name())
 	}
@@ -249,7 +249,7 @@ func genArray(syzType *prog.ArrayType, traceType parser.IrType, ctx *Context) pr
 
 func genStruct(syzType *prog.StructType, traceType parser.IrType, ctx *Context) prog.Arg {
 	if syzType.Dir() == prog.DirOut {
-		return GenDefaultArg(syzType, ctx)
+		return genDefaultArg(syzType, ctx)
 	}
 	traceType = preprocessStruct(syzType, traceType, ctx)
 	args := make([]prog.Arg, 0)
@@ -262,9 +262,9 @@ func genStruct(syzType *prog.StructType, traceType parser.IrType, ctx *Context) 
 	case *parser.Call:
 		args = append(args, parseInnerCall(syzType, a, ctx))
 	case parser.Expression:
-		return GenDefaultArg(syzType, ctx)
+		return genDefaultArg(syzType, ctx)
 	case *parser.BufferType:
-		return GenDefaultArg(syzType, ctx)
+		return genDefaultArg(syzType, ctx)
 	default:
 		log.Fatalf("Unsupported Strace Type: %#v to Struct Type", a)
 	}
@@ -279,7 +279,7 @@ func evalFields(syzFields []prog.Type, straceFields []parser.IrType, ctx *Contex
 			args = append(args, prog.DefaultArg(syzFields[i]))
 		} else {
 			if j >= len(straceFields) {
-				args = append(args, GenDefaultArg(syzFields[i], ctx))
+				args = append(args, genDefaultArg(syzFields[i], ctx))
 			} else {
 				args = append(args, genArgs(syzFields[i], straceFields[j], ctx))
 			}
@@ -470,7 +470,7 @@ func genBuffer(syzType *prog.BufferType, traceType parser.IrType, ctx *Context) 
 		binary.LittleEndian.PutUint64(bArr, val)
 		bufVal = bArr
 	case *parser.GroupType:
-		return GenDefaultArg(syzType, ctx)
+		return genDefaultArg(syzType, ctx)
 	case *parser.Field:
 		return genArgs(syzType, a.Val, ctx)
 	default:
@@ -493,7 +493,7 @@ func genPtr(syzType *prog.PtrType, traceType parser.IrType, ctx *Context) prog.A
 			return prog.DefaultArg(syzType)
 		}
 		if a.Res == nil {
-			res := GenDefaultArg(syzType.Type, ctx)
+			res := genDefaultArg(syzType.Type, ctx)
 			return addr(ctx, syzType, res.Size(), res)
 		}
 		res := genArgs(syzType.Type, a.Res, ctx)
@@ -501,7 +501,7 @@ func genPtr(syzType *prog.PtrType, traceType parser.IrType, ctx *Context) prog.A
 
 	case parser.Expression:
 		//Likely have a type of the form bind(3, 0xfffffffff, [3]);
-		res := GenDefaultArg(syzType.Type, ctx)
+		res := genDefaultArg(syzType.Type, ctx)
 		return addr(ctx, syzType, res.Size(), res)
 	case *parser.Field:
 		return genPtr(syzType, a.Val, ctx)
@@ -524,7 +524,7 @@ func genConst(syzType prog.Type, traceType parser.IrType, ctx *Context) prog.Arg
 					May get here through select. E.g. select(2, [6, 7], ..) since Expression can
 					be Ints. However, creating fd set is hard and we let default arg through
 				*/
-				return GenDefaultArg(syzType, ctx)
+				return genDefaultArg(syzType, ctx)
 			}
 		}
 
@@ -552,7 +552,7 @@ func genConst(syzType prog.Type, traceType parser.IrType, ctx *Context) prog.Arg
 		return parseInnerCall(syzType, a, ctx)
 	case *parser.BufferType:
 		//The call almost certainly an error or missing fields
-		return GenDefaultArg(syzType, ctx)
+		return genDefaultArg(syzType, ctx)
 		//E.g. ltp_bind01 two arguments are empty and
 	case *parser.PointerType:
 		/*
@@ -591,7 +591,7 @@ func genResource(syzType *prog.ResourceType, traceType parser.IrType, ctx *Conte
 
 func parseProc(syzType *prog.ProcType, traceType parser.IrType, ctx *Context) prog.Arg {
 	if syzType.Dir() == prog.DirOut {
-		return GenDefaultArg(syzType, ctx)
+		return genDefaultArg(syzType, ctx)
 	}
 	switch a := traceType.(type) {
 	case parser.Expression:
@@ -609,14 +609,14 @@ func parseProc(syzType *prog.ProcType, traceType parser.IrType, ctx *Context) pr
 		   Something like the following will trigger this
 		    bind(3, {sa_family=AF_INET, sa_data="\xac"}, 3) = -1 EINVAL(Invalid argument)
 		*/
-		return GenDefaultArg(syzType, ctx)
+		return genDefaultArg(syzType, ctx)
 	default:
 		log.Fatalf("Unsupported Type for Proc: %#v\n", traceType)
 	}
 	return nil
 }
 
-func GenDefaultArg(syzType prog.Type, ctx *Context) prog.Arg {
+func genDefaultArg(syzType prog.Type, ctx *Context) prog.Arg {
 	switch a := syzType.(type) {
 	case *prog.PtrType:
 		res := prog.DefaultArg(a.Type)
@@ -628,12 +628,12 @@ func GenDefaultArg(syzType prog.Type, ctx *Context) prog.Arg {
 	case *prog.StructType:
 		var inner []prog.Arg
 		for _, field := range a.Fields {
-			inner = append(inner, GenDefaultArg(field, ctx))
+			inner = append(inner, genDefaultArg(field, ctx))
 		}
 		return prog.MakeGroupArg(a, inner)
 	case *prog.UnionType:
 		optType := a.Fields[0]
-		return prog.MakeUnionArg(a, GenDefaultArg(optType, ctx))
+		return prog.MakeUnionArg(a, genDefaultArg(optType, ctx))
 	case *prog.ArrayType:
 		return prog.DefaultArg(syzType)
 	case *prog.ResourceType:
