@@ -145,15 +145,16 @@ func (c *CallVariantMap) Build(target *prog.Target) {
 	}
 }
 
+//NewCall2VariantMap initializes the variant mapper
 func NewCall2VariantMap() (c *CallVariantMap) {
-	c = new(CallVariantMap)
-	c.Fcntl = make(map[uint64]string)
-	c.Bpf = make(map[uint64]string)
-	c.Socket = make(map[sock]string)
-	c.Ioctl = make(map[uint64]string)
-	c.GetSetsockopt = make(map[pair]string)
-	c.ConnectionCalls = make(map[string]string)
-	return
+	return &CallVariantMap{
+		Fcntl:           make(map[uint64]string),
+		Bpf:             make(map[uint64]string),
+		Socket:          make(map[sock]string),
+		Ioctl:           make(map[uint64]string),
+		GetSetsockopt:   make(map[pair]string),
+		ConnectionCalls: make(map[string]string),
+	}
 }
 
 type preprocessHook func(ctx *Context)
