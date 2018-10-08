@@ -66,7 +66,7 @@ type Context struct {
 	CurrentSyzCall    *prog.Call
 	CurrentStraceArg  parser.IrType
 	Target            *prog.Target
-	Tracker           *MemoryTracker
+	Tracker           *memoryTracker
 	CallToCover       map[*prog.Call][]uint64
 	Call2Variant      *CallVariantMap
 	DependsOn         map[*prog.Call]map[*prog.Call]int

@@ -77,7 +77,7 @@ func ParseLoop(data string) (tree *TraceTree) {
 			if call == nil {
 				log.Fatalf("Failed to parse line: %s", line)
 			}
-			lastCall = tree.Add(call)
+			lastCall = tree.add(call)
 		}
 	}
 	if len(tree.Ptree) == 0 {

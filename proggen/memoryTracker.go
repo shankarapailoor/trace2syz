@@ -21,15 +21,15 @@ as we will allocate pointers for arguments in a separate mmap at the
 beginning of the function. Moreover there are no calls which we know of
 that take a list of pages as arguments.
 */
-type MemDependency struct {
+type memDependency struct {
 	Callidx int
 	arg     prog.Arg
 	start   uint64
 	end     uint64
 }
 
-func newMemDependency(callidx int, usedBy prog.Arg, start uint64, end uint64) *MemDependency {
-	return &MemDependency{
+func newMemDependency(callidx int, usedBy prog.Arg, start uint64, end uint64) *memDependency {
+	return &memDependency{
 		Callidx: callidx,
 		arg:     usedBy,
 		start:   start,
@@ -37,50 +37,50 @@ func newMemDependency(callidx int, usedBy prog.Arg, start uint64, end uint64) *M
 	}
 }
 
-type VirtualMapping struct {
-	usedBy    []*MemDependency
+type virtualMapping struct {
+	usedBy    []*memDependency
 	createdBy *prog.Call
 	callidx   int
 	start     uint64
 	end       uint64
 }
 
-type ShmRequest struct {
+type shmRequest struct {
 	size  uint64
 	shmid uint64
 }
 
-func (s *ShmRequest) getSize() uint64 {
+func (s *shmRequest) getSize() uint64 {
 	return s.size
 }
 
-func (vm *VirtualMapping) getUsedBy() []*MemDependency {
+func (vm *virtualMapping) getUsedBy() []*memDependency {
 	return vm.usedBy
 }
 
-func (vm *VirtualMapping) addDependency(md *MemDependency) {
+func (vm *virtualMapping) addDependency(md *memDependency) {
 	vm.usedBy = append(vm.usedBy, md)
 }
 
-func (vm *VirtualMapping) getEnd() uint64 {
+func (vm *virtualMapping) getEnd() uint64 {
 	return vm.end
 }
 
-func (vm *VirtualMapping) getStart() uint64 {
+func (vm *virtualMapping) getStart() uint64 {
 	return vm.start
 }
 
-func (vm *VirtualMapping) getCall() *prog.Call {
+func (vm *virtualMapping) getCall() *prog.Call {
 	return vm.createdBy
 }
 
-func (vm *VirtualMapping) getCallIdx() int {
+func (vm *virtualMapping) getCallIdx() int {
 	return vm.callidx
 }
 
-type MemoryTracker struct {
+type memoryTracker struct {
 	allocations map[*prog.Call][]*allocation
-	mappings    []*VirtualMapping
+	mappings    []*virtualMapping
 	/*
 	 We keep the SYSTEM V shared mapping requests because
 	 the creation of memory is broken into two steps: shmget, shmat
@@ -89,27 +89,27 @@ type MemoryTracker struct {
 	 when we add the address to our tracker we need to know the size.
 	 Memory tracker seems like a good place to keep the requests
 	*/
-	shmRequests []*ShmRequest
+	shmRequests []*shmRequest
 }
 
-func newTracker() *MemoryTracker {
-	m := new(MemoryTracker)
-	m.allocations = make(map[*prog.Call][]*allocation)
-	m.mappings = make([]*VirtualMapping, 0)
-	return m
+func newTracker() *memoryTracker {
+	return &memoryTracker{
+		allocations: make(map[*prog.Call][]*allocation),
+		mappings:    make([]*virtualMapping, 0),
+	}
 }
 
-func (m *MemoryTracker) addShmRequest(shmid uint64, size uint64) {
-	shmRequest := &ShmRequest{
+func (m *memoryTracker) addShmRequest(shmid uint64, size uint64) {
+	shmRequest := &shmRequest{
 		size:  size,
 		shmid: shmid,
 	}
 	m.shmRequests = append(m.shmRequests, shmRequest)
 }
 
-func (m *MemoryTracker) findShmRequest(shmid uint64) *ShmRequest {
+func (m *memoryTracker) findShmRequest(shmid uint64) *shmRequest {
 	//Get the latest Request associated with id
-	var ret *ShmRequest
+	var ret *shmRequest
 	for _, req := range m.shmRequests {
 		r := req
 		if req.shmid == shmid {
@@ -119,21 +119,21 @@ func (m *MemoryTracker) findShmRequest(shmid uint64) *ShmRequest {
 	return ret
 }
 
-func (m *MemoryTracker) createMapping(call *prog.Call, callidx int, arg prog.Arg, start uint64, end uint64) {
+func (m *memoryTracker) createMapping(call *prog.Call, callidx int, arg prog.Arg, start uint64, end uint64) {
 
-	mapping := &VirtualMapping{
+	mapping := &virtualMapping{
 		createdBy: call,
 		callidx:   callidx,
 		start:     start,
 		end:       end,
-		usedBy:    make([]*MemDependency, 0),
+		usedBy:    make([]*memDependency, 0),
 	}
-	mapping.usedBy = append(mapping.usedBy, &MemDependency{start: start, end: end, arg: arg})
+	mapping.usedBy = append(mapping.usedBy, &memDependency{start: start, end: end, arg: arg})
 	m.mappings = append(m.mappings, mapping)
 }
 
-func (m *MemoryTracker) findLatestOverlappingVMA(start uint64) *VirtualMapping {
-	var ret *VirtualMapping
+func (m *memoryTracker) findLatestOverlappingVMA(start uint64) *virtualMapping {
+	var ret *virtualMapping
 	for _, mapping := range m.mappings {
 		mapCopy := mapping
 
@@ -144,7 +144,7 @@ func (m *MemoryTracker) findLatestOverlappingVMA(start uint64) *VirtualMapping {
 	return ret
 }
 
-func (m *MemoryTracker) addAllocation(call *prog.Call, size uint64, arg prog.Arg) {
+func (m *memoryTracker) addAllocation(call *prog.Call, size uint64, arg prog.Arg) {
 	switch arg.(type) {
 	case *prog.PointerArg:
 	default:
@@ -159,7 +159,7 @@ func (m *MemoryTracker) addAllocation(call *prog.Call, size uint64, arg prog.Arg
 	m.allocations[call] = append(m.allocations[call], alloc)
 }
 
-func (m *MemoryTracker) fillOutMemory(prog *prog.Prog) (err error) {
+func (m *memoryTracker) fillOutMemory(prog *prog.Prog) (err error) {
 	pageSize := prog.Target.PageSize
 	var offset uint64
 	if offset, err = m.fillOutPtrArgs(prog); err != nil {
@@ -176,7 +176,7 @@ func (m *MemoryTracker) fillOutMemory(prog *prog.Prog) (err error) {
 	return nil
 }
 
-func (m *MemoryTracker) fillOutPtrArgs(p *prog.Prog) (uint64, error) {
+func (m *memoryTracker) fillOutPtrArgs(p *prog.Prog) (uint64, error) {
 	offset := uint64(0)
 	pageSize := p.Target.PageSize
 	for _, call := range p.Calls {
@@ -209,7 +209,7 @@ func (m *MemoryTracker) fillOutPtrArgs(p *prog.Prog) (uint64, error) {
 	return offset, nil
 }
 
-func (m *MemoryTracker) fillOutMmaps(offset uint64) error {
+func (m *memoryTracker) fillOutMmaps(offset uint64) error {
 	for _, mapping := range m.mappings {
 		for _, dep := range mapping.usedBy {
 			switch arg := dep.arg.(type) {
@@ -236,7 +236,7 @@ func (m *MemoryTracker) fillOutMmaps(offset uint64) error {
 //getTotalMemoryAllocations calculates the total amount of memory needed by all the arguments
 //of every system call. Currently we are allocating memory in a naive fashion by providing
 //a new memory region for every every argument. However, this can be significantly improved
-func (m *MemoryTracker) getTotalMemoryAllocations(p *prog.Prog) uint64 {
+func (m *memoryTracker) getTotalMemoryAllocations(p *prog.Prog) uint64 {
 	pageSize := p.Target.PageSize
 	sum := uint64(0)
 	for _, call := range p.Calls {

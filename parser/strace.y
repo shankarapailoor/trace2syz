@@ -192,9 +192,9 @@ pointer_type:
     | NULL {$$ = nullPointer()}
 
 group_type:
-    LBRACKET_SQUARE types RBRACKET_SQUARE {$$ = NewGroupType($2)}
-    | LBRACKET types RBRACKET {$$ = NewGroupType($2)}
-    | LBRACKET types COMMA RBRACKET {$$ = NewGroupType($2)}
+    LBRACKET_SQUARE types RBRACKET_SQUARE {$$ = newGroupType($2)}
+    | LBRACKET types RBRACKET {$$ = newGroupType($2)}
+    | LBRACKET types COMMA RBRACKET {$$ = newGroupType($2)}
 
 field_type:
      IDENTIFIER EQUALS %prec NOTYPE {$$ = newField($1, nil);}
