@@ -9,20 +9,20 @@ import (
 	"strconv"
 )
 
-type Operation int
+type operation int
 
 const (
-	ORop       = iota //OR = |
-	ANDop             //AND = &
-	XORop             //XOR = ^
-	NOTop             //NOT = !
-	LSHIFTop          //LSHIFT = <<
-	RSHIFTop          //RSHIFT = >>
-	ONESCOMPop        //ONESCOMP = ~
-	TIMESop           //TIMES = *
-	LANDop            //LAND = &&
-	LORop             //LOR = ||
-	LEQUALop          //LEQUAL = ==
+	orOp       = iota //OR = |
+	andOp             //AND = &
+	xorOp             //XOR = ^
+	notOp             //NOT = !
+	lshiftOp          //LSHIFT = <<
+	rshiftOp          //RSHIFT = >>
+	onescompOp        //ONESCOMP = ~
+	timesOp           //TIMES = *
+	landOp            //LAND = &&
+	lorOp             //LOR = ||
+	lequalOp          //LEQUAL = ==
 
 	exprTypeName    string = "Expression Type"
 	groupTypeName   string = "Group Type"
@@ -266,11 +266,11 @@ func (e *expressionCommon) Name() string {
 type binOp struct {
 	expressionCommon
 	leftOp  Expression
-	op      Operation
+	op      operation
 	rightOp Expression
 }
 
-func newBinop(leftOperand, rightOperand IrType, Op Operation) *binOp {
+func newBinop(leftOperand, rightOperand IrType, Op operation) *binOp {
 	return &binOp{leftOp: leftOperand.(Expression), rightOp: rightOperand.(Expression), op: Op}
 }
 
@@ -279,17 +279,17 @@ func (b *binOp) Eval(target *prog.Target) uint64 {
 	op1Eval := b.leftOp.Eval(target)
 	op2Eval := b.rightOp.Eval(target)
 	switch b.op {
-	case ANDop:
+	case andOp:
 		return op1Eval & op2Eval
-	case ORop:
+	case orOp:
 		return op1Eval | op2Eval
-	case XORop:
+	case xorOp:
 		return op1Eval ^ op2Eval
-	case LSHIFTop:
+	case lshiftOp:
 		return op1Eval << op2Eval
-	case RSHIFTop:
+	case rshiftOp:
 		return op1Eval >> op2Eval
-	case TIMESop:
+	case timesOp:
 		return op1Eval * op2Eval
 	default:
 		log.Fatalf("Unable to handle op: %d", b.op)
@@ -304,11 +304,11 @@ func (b *binOp) String() string {
 
 type unOp struct {
 	expressionCommon
-	op      Operation
+	op      operation
 	operand Expression
 }
 
-func newUnop(operand IrType, op Operation) *unOp {
+func newUnop(operand IrType, op operation) *unOp {
 	return &unOp{op: op, operand: operand.(Expression)}
 }
 
@@ -316,7 +316,7 @@ func newUnop(operand IrType, op Operation) *unOp {
 func (u *unOp) Eval(target *prog.Target) uint64 {
 	opEval := u.operand.Eval(target)
 	switch u.op {
-	case ONESCOMPop:
+	case onescompOp:
 		return ^opEval
 	default:
 		log.Fatalf("Unsupported Unop Op: %d", u.op)

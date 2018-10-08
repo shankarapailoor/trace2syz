@@ -18,10 +18,10 @@ type sock struct {
 	protocol uint64
 }
 
-/*
- Mappings of system calls to their variants
- Keys represent
-*/
+// CallVariantMap maps system calls to their variants (system calls with $ like socket$packet)
+// Keys represent the parts of the system call that need to be used
+// to identify the variant. Calls like socket require all three arguments
+// Some require two like setosckopt
 type CallVariantMap struct {
 	Fcntl           map[uint64]string
 	Bpf             map[uint64]string

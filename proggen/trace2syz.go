@@ -85,6 +85,8 @@ func newContext(target *prog.Target, variantMap *CallVariantMap) (ctx *Context) 
 	return
 }
 
+//FillOutMemory determines how much memory to allocate for arguments in a program
+//And generates an mmap c to do the allocation.This mmap is prepended to prog.Calls
 func (ctx *Context) FillOutMemory() error {
 	err := ctx.Tracker.fillOutMemory(ctx.Prog)
 	if err != nil {
@@ -103,7 +105,7 @@ func (ctx *Context) FillOutMemory() error {
 	return nil
 }
 
-//ParseTrace converts a trace to a syzkaller program
+//GenSyzProg converts a trace to a syzkaller program
 func GenSyzProg(trace *parser.Trace, target *prog.Target, variantMap *CallVariantMap) *Context {
 	syzProg := new(prog.Prog)
 	syzProg.Target = target

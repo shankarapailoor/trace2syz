@@ -159,16 +159,16 @@ expr_type:
     flags {$$ = $1}
     | ints {$$ = $1}
     | macro_type {$$ = $1}
-    | expr_type OR expr_type {$$ = newBinop($1, $3, ORop)}
-    | expr_type AND expr_type {$$ = newBinop($1, $3, ANDop)}
-    | expr_type LSHIFT expr_type {$$ = newBinop($1, $3, LSHIFTop)}
-    | expr_type RSHIFT expr_type {$$ = newBinop($1, $3, RSHIFTop)}
-    | expr_type LOR expr_type {$$ = newBinop($1, $3, LORop)}
-    | expr_type LAND expr_type {$$ = newBinop($1, $3, LANDop)}
-    | expr_type LEQUAL expr_type {$$ = newBinop($1, $3, LEQUALop)}
+    | expr_type OR expr_type {$$ = newBinop($1, $3, orOp)}
+    | expr_type AND expr_type {$$ = newBinop($1, $3, andOp)}
+    | expr_type LSHIFT expr_type {$$ = newBinop($1, $3, lshiftOp)}
+    | expr_type RSHIFT expr_type {$$ = newBinop($1, $3, rshiftOp)}
+    | expr_type LOR expr_type {$$ = newBinop($1, $3, lorOp)}
+    | expr_type LAND expr_type {$$ = newBinop($1, $3, landOp)}
+    | expr_type LEQUAL expr_type {$$ = newBinop($1, $3, lequalOp)}
     | LPAREN expr_type RPAREN {$$ = $2}
-    | expr_type TIMES expr_type {$$ = newBinop($1, $3, TIMESop)}
-    | ONESCOMP expr_type {$$ = newUnop($2, ONESCOMPop)}
+    | expr_type TIMES expr_type {$$ = newBinop($1, $3, timesOp)}
+    | ONESCOMP expr_type {$$ = newUnop($2, onescompOp)}
 
 ints:
     int_type {i := make(Ints, 1); i[0] = $1; $$ = i}
