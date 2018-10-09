@@ -11,7 +11,6 @@ import (
 	"github.com/shankarapailoor/trace2syz/proggen"
 	"io/ioutil"
 	"os"
-	"path"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -24,9 +23,9 @@ var (
 )
 
 const (
-	goos             = "linux" //Target OS
-	arch             = "amd64" //Target architecture
-	currentDBVersion = 3       //Marked as minimized
+	goos             = "linux" // Target OS
+	arch             = "amd64" // Target architecture
+	currentDBVersion = 3       // Marked as minimized
 )
 
 func main() {
@@ -56,10 +55,10 @@ func parseTraces(target *prog.Target) []*proggen.Context {
 	totalFiles := len(names)
 	log.Logf(0, "Parsing %d traces", totalFiles)
 	for i, file := range names {
-		log.Logf(1, "Parsing File %d/%d: %s", i+1, totalFiles, path.Base(names[i]))
+		log.Logf(1, "Parsing File %d/%d: %s", i+1, totalFiles, filepath.Base(names[i]))
 		tree := parser.Parse(file)
 		if tree == nil {
-			log.Logf(1, "File: %s is empty", path.Base(file))
+			log.Logf(1, "File: %s is empty", filepath.Base(file))
 			continue
 		}
 		ctxs := parseTree(tree, tree.RootPid, target)
@@ -104,14 +103,14 @@ func getTraceFiles(dir string) []string {
 
 	}
 	for _, info := range infos {
-		name := path.Join(dir, info.Name())
+		name := filepath.Join(dir, info.Name())
 		names = append(names, name)
 	}
 	return names
 }
 
-//parseTree groups system calls in the trace by process id.
-//The tree preserves process hierarchy i.e. parent->[]child
+// parseTree groups system calls in the trace by process id.
+// The tree preserves process hierarchy i.e. parent->[]child
 func parseTree(tree *parser.TraceTree, pid int64, target *prog.Target) []*proggen.Context {
 	log.Logf(2, "Parsing trace: %s", tree.Filename)
 	var ctxs []*proggen.Context

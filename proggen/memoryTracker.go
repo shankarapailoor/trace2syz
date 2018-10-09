@@ -14,13 +14,12 @@ type allocation struct {
 	arg      prog.Arg
 }
 
-/*
-Memory dependency represents the dependency of a call on a
-virtual memory mapping. We assume the dependency is contiguous
-as we will allocate pointers for arguments in a separate mmap at the
-beginning of the function. Moreover there are no calls which we know of
-that take a list of pages as arguments.
-*/
+// Memory dependency represents the dependency of a call on a
+// virtual memory mapping. We assume the dependency is contiguous
+// as we will allocate pointers for arguments in a separate mmap at the
+// beginning of the function. Moreover there are no calls which we know of
+// that take a list of pages as arguments.
+
 type memDependency struct {
 	Callidx int
 	arg     prog.Arg
@@ -81,14 +80,14 @@ func (vm *virtualMapping) getCallIdx() int {
 type memoryTracker struct {
 	allocations map[*prog.Call][]*allocation
 	mappings    []*virtualMapping
-	/*
-	 We keep the SYSTEM V shared mapping requests because
-	 the creation of memory is broken into two steps: shmget, shmat
-	 shmget requests for an amount of shared memory and returns an id for it
-	 shmat generates the address for the given segment using the id but
-	 when we add the address to our tracker we need to know the size.
-	 Memory tracker seems like a good place to keep the requests
-	*/
+
+	// We keep the SYSTEM V shared mapping requests because
+	// the creation of memory is broken into two steps: shmget, shmat
+	// shmget requests for an amount of shared memory and returns an id for it
+	// shmat generates the address for the given segment using the id but
+	// when we add the address to our tracker we need to know the size.
+	// Memory tracker seems like a good place to keep the requests
+
 	shmRequests []*shmRequest
 }
 
@@ -108,7 +107,7 @@ func (m *memoryTracker) addShmRequest(shmid uint64, size uint64) {
 }
 
 func (m *memoryTracker) findShmRequest(shmid uint64) *shmRequest {
-	//Get the latest Request associated with id
+	// Get the latest Request associated with id
 	var ret *shmRequest
 	for _, req := range m.shmRequests {
 		r := req
@@ -214,7 +213,7 @@ func (m *memoryTracker) fillOutMmaps(offset uint64) error {
 		for _, dep := range mapping.usedBy {
 			switch arg := dep.arg.(type) {
 			case *prog.PointerArg:
-				//Offset should align with the start of a mapping/end of previous mapping.
+				// Offset should align with the start of a mapping/end of previous mapping.
 				arg.Address = offset + dep.start - mapping.start
 
 				arg.Res = nil
@@ -233,9 +232,9 @@ func (m *memoryTracker) fillOutMmaps(offset uint64) error {
 	return nil
 }
 
-//getTotalMemoryAllocations calculates the total amount of memory needed by all the arguments
-//of every system call. Currently we are allocating memory in a naive fashion by providing
-//a new memory region for every every argument. However, this can be significantly improved
+// getTotalMemoryAllocations calculates the total amount of memory needed by all the arguments
+// of every system call. Currently we are allocating memory in a naive fashion by providing
+// a new memory region for every every argument. However, this can be significantly improved
 func (m *memoryTracker) getTotalMemoryAllocations(p *prog.Prog) uint64 {
 	pageSize := p.Target.PageSize
 	sum := uint64(0)

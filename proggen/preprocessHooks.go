@@ -115,7 +115,7 @@ func (c *CallVariantMap) buildConnectCallMap(variants []*prog.Syscall) {
 	}
 }
 
-//Build constructs the variant mappings from Syzkaller target
+// Build constructs the variant mappings from Syzkaller target
 func (c *CallVariantMap) Build(target *prog.Target) {
 	callVariants := make(map[string][]*prog.Syscall)
 	for _, call := range target.Syscalls {
@@ -145,7 +145,7 @@ func (c *CallVariantMap) Build(target *prog.Target) {
 	}
 }
 
-//NewCall2VariantMap initializes the variant mapper
+// NewCall2VariantMap initializes the variant mapper
 func NewCall2VariantMap() (c *CallVariantMap) {
 	return &CallVariantMap{
 		Fcntl:           make(map[uint64]string),
@@ -226,14 +226,12 @@ func fcntl(ctx *Context) {
 }
 
 func connectCalls(ctx *Context) {
-	/*
-		Connection system calls can take on many subforms such as
-		accept$inet
-		bind$inet6
+	// Connection system calls can take on many subforms such as
+	// accept$inet
+	// bind$inet6
 
-		In order to determine the proper form we need to look at the file descriptor to determine
-		the proper socket type. We refer to the $inet as a suffix to the name
-	*/
+	// In order to determine the proper form we need to look at the file descriptor to determine
+	// the proper socket type. We refer to the $inet as a suffix to the name
 	straceFd := ctx.CurrentStraceCall.Args[0]
 	syzFd := ctx.CurrentSyzCall.Meta.Args[0]
 	var arg prog.Arg
@@ -242,8 +240,8 @@ func connectCalls(ctx *Context) {
 	}
 	switch a := arg.Type().(type) {
 	case *prog.ResourceType:
-		//Start with most descriptive type and see if there is a match
-		//Then work backwards to more general resource types
+		// Start with most descriptive type and see if there is a match
+		// Then work backwards to more general resource types
 		var suffix string
 		for i := len(a.Desc.Kind) - 1; i > -1; i-- {
 			if suffix = ctx.Call2Variant.ConnectionCalls[a.Desc.Kind[i]]; suffix == "" {
@@ -334,7 +332,7 @@ func modifyLdt(ctx *Context) {
 
 func shmget(ctx *Context) {
 	if ctx.CurrentStraceCall.Ret <= 0 {
-		//We have a successful shmget
+		// We have a successful shmget
 		return
 	}
 	switch a := ctx.CurrentStraceCall.Args[1].(type) {

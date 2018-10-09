@@ -56,8 +56,8 @@ type resourceDescription struct {
 	Val  string
 }
 
-//Context stores metadata related to a syzkaller program
-//Currently we are embedding the State object within the Context.
+// Context stores metadata related to a syzkaller program
+// Currently we are embedding the State object within the Context.
 // We should probably merge the two objects
 type Context struct {
 	ReturnCache       returnCache
@@ -85,8 +85,8 @@ func newContext(target *prog.Target, variantMap *CallVariantMap) (ctx *Context) 
 	return
 }
 
-//FillOutMemory determines how much memory to allocate for arguments in a program
-//And generates an mmap c to do the allocation.This mmap is prepended to prog.Calls
+// FillOutMemory determines how much memory to allocate for arguments in a program
+// And generates an mmap c to do the allocation.This mmap is prepended to prog.Calls
 func (ctx *Context) FillOutMemory() error {
 	err := ctx.Tracker.fillOutMemory(ctx.Prog)
 	if err != nil {
@@ -105,7 +105,7 @@ func (ctx *Context) FillOutMemory() error {
 	return nil
 }
 
-//GenSyzProg converts a trace to a syzkaller program
+// GenSyzProg converts a trace to a syzkaller program
 func GenSyzProg(trace *parser.Trace, target *prog.Target, variantMap *CallVariantMap) *Context {
 	syzProg := new(prog.Prog)
 	syzProg.Target = target
@@ -114,11 +114,10 @@ func GenSyzProg(trace *parser.Trace, target *prog.Target, variantMap *CallVarian
 	var call *prog.Call
 	for _, sCall := range trace.Calls {
 		if sCall.Paused {
-			/*Probably a case where the call was killed by a signal like the following
-			2179  wait4(2180,  <unfinished ...>
-			2179  <... wait4 resumed> 0x7fff28981bf8, 0, NULL) = ? ERESTARTSYS
-			2179  --- SIGUSR1 {si_signo=SIGUSR1, si_code=SI_USER, si_pid=2180, si_uid=0} ---
-			*/
+			// Probably a case where the call was killed by a signal like the following
+			// 2179  wait4(2180,  <unfinished ...>
+			// 2179  <... wait4 resumed> 0x7fff28981bf8, 0, NULL) = ? ERESTARTSYS
+			// 2179  --- SIGUSR1 {si_signo=SIGUSR1, si_code=SI_USER, si_pid=2180, si_uid=0} ---
 			continue
 		}
 		ctx.CurrentStraceCall = sCall
@@ -148,8 +147,8 @@ func genCall(ctx *Context) *prog.Call {
 
 	preprocess(ctx)
 	if ctx.CurrentSyzCall.Meta == nil {
-		//A call like fcntl may have variants like fcntl$get_flag
-		//but no generic fcntl system call in Syzkaller
+		// A call like fcntl may have variants like fcntl$get_flag
+		// but no generic fcntl system call in Syzkaller
 		return nil
 	}
 	retCall.Ret = prog.MakeReturnArg(ctx.CurrentSyzCall.Meta.Ret)
@@ -338,12 +337,12 @@ func identifySockaddrStorage(syzType *prog.UnionType, ctx *Context) int {
 	for i, field := range syzType.Fields {
 		field2Opt[field.FieldName()] = i
 	}
-	//We currently look at the first argument of the system call
-	//To determine which option of the union we select.
+	// We currently look at the first argument of the system call
+	// To determine which option of the union we select.
 	call := ctx.CurrentStraceCall
 	var straceArg parser.IrType
 	switch call.CallName {
-	//May need to handle special cases.
+	// May need to handle special cases.
 	case "recvfrom":
 		straceArg = call.Args[4]
 	default:
@@ -389,13 +388,13 @@ func identifySockaddrNetlinkUnion(syzType *prog.UnionType, ctx *Context) int {
 			case parser.Expression:
 				pid := b.Eval(ctx.Target)
 				if pid > 0 {
-					//User
+					// User
 					return field2Opt["proc"]
 				} else if pid == 0 {
-					//Kernel
+					// Kernel
 					return field2Opt["kern"]
 				} else {
-					//Unspec
+					// Unspec
 					return field2Opt["unspec"]
 				}
 			case *parser.Field:
@@ -502,7 +501,7 @@ func genPtr(syzType *prog.PtrType, traceType parser.IrType, ctx *Context) prog.A
 		return addr(ctx, syzType, res.Size(), res)
 
 	case parser.Expression:
-		//Likely have a type of the form bind(3, 0xfffffffff, [3]);
+		// Likely have a type of the form bind(3, 0xfffffffff, [3]);
 		res := genDefaultArg(syzType.Type, ctx)
 		return addr(ctx, syzType, res.Size(), res)
 	case *parser.Field:
@@ -522,10 +521,8 @@ func genConst(syzType prog.Type, traceType parser.IrType, ctx *Context) prog.Arg
 		switch b := a.(type) {
 		case parser.Ints:
 			if len(b) >= 2 {
-				/*
-					May get here through select. E.g. select(2, [6, 7], ..) since Expression can
-					be Ints. However, creating fd set is hard and we let default arg through
-				*/
+				// May get here through select. E.g. select(2, [6, 7], ..) since Expression can
+				// be Ints. However, creating fd set is hard and we let default arg through
 				return genDefaultArg(syzType, ctx)
 			}
 		}
@@ -534,32 +531,29 @@ func genConst(syzType prog.Type, traceType parser.IrType, ctx *Context) prog.Arg
 	case *parser.DynamicType:
 		return prog.MakeConstArg(syzType, a.BeforeCall.Eval(ctx.Target))
 	case *parser.GroupType:
-		/*
-				Sometimes strace represents a pointer to int as [0] which gets parsed
-				as Array([0], len=1). A good example is ioctl(3, FIONBIO, [1]). We may also have an union int type that
-			    is a represented as a struct in strace e.g.
-				sigev_value={sival_int=-2123636944, sival_ptr=0x7ffd816bdf30}
-				For now we choose the first option
-		*/
+		// Sometimes strace represents a pointer to int as [0] which gets parsed
+		// as Array([0], len=1). A good example is ioctl(3, FIONBIO, [1]). We may also have an union int type that
+		// is a represented as a struct in strace e.g.
+		// sigev_value={sival_int=-2123636944, sival_ptr=0x7ffd816bdf30}
+		// For now we choose the first option
 		if a.Len == 0 {
 			log.Fatalf("Parsing const type. Got array type with len 0: %#v", ctx)
 		}
 		return genConst(syzType, a.Elems[0], ctx)
 
 	case *parser.Field:
-		//We have an argument of the form sin_port=IntType(0)
+		// We have an argument of the form sin_port=IntType(0)
 		return genArgs(syzType, a.Val, ctx)
 	case *parser.Call:
-		//We have likely hit a call like inet_pton, htonl, etc
+		// We have likely hit a call like inet_pton, htonl, etc
 		return parseInnerCall(syzType, a, ctx)
 	case *parser.BufferType:
-		//The call almost certainly an error or missing fields
+		// The call almost certainly an error or missing fields
 		return genDefaultArg(syzType, ctx)
-		//E.g. ltp_bind01 two arguments are empty and
+		// E.g. ltp_bind01 two arguments are empty and
 	case *parser.PointerType:
-		/*
-			This can be triggered by the following:
-			2435  connect(3, {sa_family=0x2f ,..., 16)*/
+		// This can be triggered by the following:
+		// 2435  connect(3, {sa_family=0x2f ,..., 16)
 		return prog.MakeConstArg(syzType, a.Address)
 	default:
 		log.Fatalf("Cannot convert Strace Type: %s to Const Type", traceType.Name())
@@ -607,10 +601,9 @@ func parseProc(syzType *prog.ProcType, traceType parser.IrType, ctx *Context) pr
 	case *parser.Call:
 		return parseInnerCall(syzType, a, ctx)
 	case *parser.BufferType:
-		/* Again probably an error case
-		   Something like the following will trigger this
-		    bind(3, {sa_family=AF_INET, sa_data="\xac"}, 3) = -1 EINVAL(Invalid argument)
-		*/
+		// Again probably an error case
+		// Something like the following will trigger this
+		// bind(3, {sa_family=AF_INET, sa_data="\xac"}, 3) = -1 EINVAL(Invalid argument)
 		return genDefaultArg(syzType, ctx)
 	default:
 		log.Fatalf("Unsupported Type for Proc: %#v\n", traceType)
@@ -655,15 +648,13 @@ func addr(ctx *Context, syzType prog.Type, size uint64, data prog.Arg) prog.Arg 
 }
 
 func reorderStructFields(syzType *prog.StructType, traceType *parser.GroupType, ctx *Context) {
-	/*
-		Sometimes strace reports struct fields out of order compared to Syzkaller.
-		Example: 5704  bind(3, {sa_family=AF_INET6,
-					sin6_port=htons(8888),
-					inet_pton(AF_INET6, "::", &sin6_addr),
-					sin6_flowinfo=htonl(2206138368),
-					sin6_scope_id=2049825634}, 128) = 0
-		The flow_info and pton fields are switched in Syzkaller
-	*/
+	// Sometimes strace reports struct fields out of order compared to Syzkaller.
+	// Example: 5704  bind(3, {sa_family=AF_INET6,
+	//				sin6_port=htons(8888),
+	//				inet_pton(AF_INET6, "::", &sin6_addr),
+	//				sin6_flowinfo=htonl(2206138368),
+	//				sin6_scope_id=2049825634}, 128) = 0
+	//	The flow_info and pton fields are switched in Syzkaller
 	switch syzType.TypeName {
 	case "sockaddr_in6":
 		log.Logf(5, "Reordering in6")

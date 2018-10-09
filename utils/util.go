@@ -1,8 +1,8 @@
 package utils
 
 var (
-	//ShouldSkip lists system calls that we should skip when parsing
-	//Some of these are unsupported or not worth executing
+	// ShouldSkip lists system calls that we should skip when parsing
+	// Some of these are unsupported or not worth executing
 	ShouldSkip = map[string]bool{
 		"brk":                    true,
 		"":                       true,
@@ -43,8 +43,8 @@ var (
 		"sched_get_priority_max": true,
 	}
 
-	//SpecialConsts contains values for flags found in strace. Some of these have different names in Syzkaller
-	//and others are not yet added to Syzkaller.
+	// SpecialConsts contains values for flags found in strace. Some of these have different names in Syzkaller
+	// and others are not yet added to Syzkaller.
 	SpecialConsts = map[string]uint64{
 		"_LINUX_CAPABILITY_VERSION_1":                         0x19980330,
 		"_LINUX_CAPABILITY_VERSION_2":                         0x20071026,

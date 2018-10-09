@@ -9,12 +9,12 @@ import (
 )
 
 const (
-	maxBufferSize = 64 * 1024 * 1024 //maxBufferSize is maximum size for buffer
-	coverDelim    = ","              //Delimiter to split instructions in trace e.g. Cover:0x734,0x735
-	coverID       = "Cover:"         //CoverID is the indicator that the line in the trace is the coverage
-	sysrestart    = "ERESTART"       //SYSRESTART corresponds to the error code of ERESTART.
-	signalPlus    = "+++"            //SignalPlus marks +++
-	signalMinus   = "---"            //SignalPlus marks ---
+	maxBufferSize = 64 * 1024 * 1024 // maxBufferSize is maximum size for buffer
+	coverDelim    = ","              // Delimiter to split instructions in trace e.g. Cover:0x734,0x735
+	coverID       = "Cover:"         // CoverID is the indicator that the line in the trace is the coverage
+	sysrestart    = "ERESTART"       // SYSRESTART corresponds to the error code of ERESTART.
+	signalPlus    = "+++"            // SignalPlus marks +++
+	signalMinus   = "---"            // SignalPlus marks ---
 )
 
 func parseCoverage(line string) []uint64 {
@@ -45,7 +45,7 @@ func parseSyscall(scanner *bufio.Scanner) (int, *Syscall) {
 	return ret, lex.result
 }
 
-//ParseLoop parses each line of a strace file in a loop
+// ParseLoop parses each line of a strace file in a loop
 func ParseLoop(data string) (tree *TraceTree) {
 	tree = NewTraceTree()
 	//Creating the process tree
@@ -87,7 +87,7 @@ func ParseLoop(data string) (tree *TraceTree) {
 	return
 }
 
-//Parse parses a trace of system calls and returns an intermediate representation
+// Parse parses a trace of system calls and returns an intermediate representation
 func Parse(filename string) *TraceTree {
 	var data []byte
 	var err error

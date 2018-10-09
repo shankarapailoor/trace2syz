@@ -12,17 +12,17 @@ import (
 type operation int
 
 const (
-	orOp       = iota //OR = |
-	andOp             //AND = &
-	xorOp             //XOR = ^
-	notOp             //NOT = !
-	lshiftOp          //LSHIFT = <<
-	rshiftOp          //RSHIFT = >>
-	onescompOp        //ONESCOMP = ~
-	timesOp           //TIMES = *
-	landOp            //LAND = &&
-	lorOp             //LOR = ||
-	lequalOp          //LEQUAL = ==
+	orOp       = iota // OR = |
+	andOp             // AND = &
+	xorOp             // XOR = ^
+	notOp             // NOT = !
+	lshiftOp          // LSHIFT = <<
+	rshiftOp          // RSHIFT = >>
+	onescompOp        // ONESCOMP = ~
+	timesOp           // TIMES = *
+	landOp            // LAND = &&
+	lorOp             // LOR = ||
+	lequalOp          // LEQUAL = ==
 
 	exprTypeName    string = "Expression Type"
 	groupTypeName   string = "Group Type"
@@ -32,8 +32,8 @@ const (
 	flagTypeName    string = "Flag Type"
 )
 
-//TraceTree struct contains intermediate representation of trace
-//If a trace is multiprocess it constructs a trace for each type
+// TraceTree struct contains intermediate representation of trace
+// If a trace is multiprocess it constructs a trace for each type
 type TraceTree struct {
 	TraceMap map[int64]*Trace
 	Ptree    map[int64][]int64
@@ -41,7 +41,7 @@ type TraceTree struct {
 	Filename string
 }
 
-//NewTraceTree initializes a TraceTree
+// NewTraceTree initializes a TraceTree
 func NewTraceTree() (tree *TraceTree) {
 	tree = &TraceTree{
 		TraceMap: make(map[int64]*Trace),
@@ -83,7 +83,7 @@ func (tree *TraceTree) string() string {
 	return buf.String()
 }
 
-//Trace is just a list of system calls
+// Trace is just a list of system calls
 type Trace struct {
 	Calls []*Syscall
 }
@@ -106,14 +106,14 @@ func (trace *Trace) add(call *Syscall) (ret *Syscall) {
 	return
 }
 
-//IrType is the intermediate representation of the strace output
-//Every argument of a system call should be represented in an intermediate type
+// IrType is the intermediate representation of the strace output
+// Every argument of a system call should be represented in an intermediate type
 type IrType interface {
 	Name() string
 	String() string
 }
 
-//Syscall struct is the IR type for any system call
+// Syscall struct is the IR type for any system call
 type Syscall struct {
 	CallName string
 	Args     []IrType
@@ -124,7 +124,7 @@ type Syscall struct {
 	Resumed  bool
 }
 
-//NewSyscall - constructor
+// NewSyscall - constructor
 func NewSyscall(pid int64, name string, args []IrType, ret int64, paused, resumed bool) (sys *Syscall) {
 	return &Syscall{
 		CallName: name,
@@ -136,7 +136,7 @@ func NewSyscall(pid int64, name string, args []IrType, ret int64, paused, resume
 	}
 }
 
-//String
+// String
 func (s *Syscall) String() string {
 	buf := new(bytes.Buffer)
 
@@ -151,7 +151,7 @@ func (s *Syscall) String() string {
 	return buf.String()
 }
 
-//GenDefaultIrType generates a default intermediate type from a Syzkaller type
+// GenDefaultIrType generates a default intermediate type from a Syzkaller type
 func GenDefaultIrType(syzType prog.Type) IrType {
 	switch a := syzType.(type) {
 	case *prog.StructType:
@@ -176,8 +176,8 @@ func GenDefaultIrType(syzType prog.Type) IrType {
 	return nil
 }
 
-//Call Represents arguments that are expanded by strace into calls
-//E.g. inet_addr("127.0.0.1")
+// Call Represents arguments that are expanded by strace into calls
+// E.g. inet_addr("127.0.0.1")
 type Call struct {
 	CallName string
 	Args     []IrType
@@ -187,12 +187,12 @@ func newCallType(name string, args []IrType) *Call {
 	return &Call{CallName: name, Args: args}
 }
 
-//Name implements IrType Name()
+// Name implements IrType Name()
 func (c *Call) Name() string {
 	return callTypeName
 }
 
-//String implements IrType String()
+// String implements IrType String()
 func (c *Call) String() string {
 	buf := new(bytes.Buffer)
 	buf.WriteString("Name: " + c.CallName + "\n")
@@ -202,7 +202,7 @@ func (c *Call) String() string {
 	return buf.String()
 }
 
-//GroupType contains arrays and structs
+// GroupType contains arrays and structs
 type GroupType struct {
 	Elems []IrType
 	Len   int
@@ -212,12 +212,12 @@ func newGroupType(elems []IrType) (typ *GroupType) {
 	return &GroupType{Elems: elems, Len: len(elems)}
 }
 
-//Name implements IrType Name()
+// Name implements IrType Name()
 func (a *GroupType) Name() string {
 	return groupTypeName
 }
 
-//String implements IrType String()
+// String implements IrType String()
 func (a *GroupType) String() string {
 	var buf bytes.Buffer
 
@@ -230,7 +230,7 @@ func (a *GroupType) String() string {
 	return buf.String()
 }
 
-//Field of a struct e.g. name = "Shankara"
+// Field of a struct e.g. name = "Shankara"
 type Field struct {
 	Key string
 	Val IrType
@@ -240,7 +240,7 @@ func newField(key string, val IrType) *Field {
 	return &Field{Key: key, Val: val}
 }
 
-//Name implements IrType Name()
+// Name implements IrType Name()
 func (f *Field) Name() string {
 	return "Field Type"
 }
@@ -249,7 +249,7 @@ func (f *Field) String() string {
 	return f.Val.String()
 }
 
-//Expression represents Ints, Flags,Arithmetic expressions
+// Expression represents Ints, Flags,Arithmetic expressions
 type Expression interface {
 	IrType
 	Eval(*prog.Target) uint64
@@ -258,7 +258,7 @@ type Expression interface {
 type expressionCommon struct {
 }
 
-//Name implements IrType Name()
+// Name implements IrType Name()
 func (e *expressionCommon) Name() string {
 	return exprTypeName
 }
@@ -274,7 +274,7 @@ func newBinop(leftOperand, rightOperand IrType, Op operation) *binOp {
 	return &binOp{leftOp: leftOperand.(Expression), rightOp: rightOperand.(Expression), op: Op}
 }
 
-//Eval implements Expression's Eval()
+// Eval implements Expression's Eval()
 func (b *binOp) Eval(target *prog.Target) uint64 {
 	op1Eval := b.leftOp.Eval(target)
 	op2Eval := b.rightOp.Eval(target)
@@ -297,7 +297,7 @@ func (b *binOp) Eval(target *prog.Target) uint64 {
 	}
 }
 
-//String implements IrType String()
+// String implements IrType String()
 func (b *binOp) String() string {
 	return fmt.Sprintf("op1: %s op2: %s, operand: %v\n", b.leftOp.String(), b.rightOp.String(), b.op)
 }
@@ -312,7 +312,7 @@ func newUnop(operand IrType, op operation) *unOp {
 	return &unOp{op: op, operand: operand.(Expression)}
 }
 
-//Eval implements Expression's Eval()
+// Eval implements Expression's Eval()
 func (u *unOp) Eval(target *prog.Target) uint64 {
 	opEval := u.operand.Eval(target)
 	switch u.op {
@@ -329,8 +329,8 @@ func (u *unOp) String() string {
 	return fmt.Sprintf("op1: %v operand: %v\n", u.operand, u.op)
 }
 
-//DynamicType represents cases where strace shows the before system call and after
-//E.g. <... getsockname resumed> {sa_family=AF_INET6,..., sin6_scope_id=0}, [112->28]
+// DynamicType represents cases where strace shows the before system call and after
+// E.g. <... getsockname resumed> {sa_family=AF_INET6,..., sin6_scope_id=0}, [112->28]
 type DynamicType struct {
 	BeforeCall Expression
 	AfterCall  Expression
@@ -340,17 +340,17 @@ func newDynamicType(before, after IrType) *DynamicType {
 	return &DynamicType{BeforeCall: before.(Expression), AfterCall: after.(Expression)}
 }
 
-//String implements IrType String()
+// String implements IrType String()
 func (d *DynamicType) String() string {
 	return d.BeforeCall.String()
 }
 
-//Name implements IrType Name()
+// Name implements IrType Name()
 func (d *DynamicType) Name() string {
 	return "Dynamic Type"
 }
 
-//Meant for cases where strace produces macros like KERNEL_VERSION
+// Meant for cases where strace produces macros like KERNEL_VERSION
 type macroType struct {
 	expressionCommon
 	MacroName string
@@ -361,7 +361,7 @@ func newMacroType(name string, args []IrType) *macroType {
 	return &macroType{MacroName: name, Args: args}
 }
 
-//String implements IrType String()
+// String implements IrType String()
 func (m *macroType) String() string {
 	var buf bytes.Buffer
 
@@ -372,7 +372,7 @@ func (m *macroType) String() string {
 	return buf.String()
 }
 
-//Eval implements Expression's Eval()
+// Eval implements Expression's Eval()
 func (m *macroType) Eval(target *prog.Target) uint64 {
 	switch m.MacroName {
 	case "KERNEL_VERSION":
@@ -386,9 +386,9 @@ func (m *macroType) Eval(target *prog.Target) uint64 {
 	return 0
 }
 
-//Garbage type used to parse content inside of ending parenthesis from strace
-//E.g. access(....) = -1 ENOENT (No such file or directory). The stuff in the ending parenthesis
-//will get parsed into this type
+// Garbage type used to parse content inside of ending parenthesis from strace
+// E.g. access(....) = -1 ENOENT (No such file or directory). The stuff in the ending parenthesis
+// will get parsed into this type
 type parenthetical struct {
 	tmp string
 }
@@ -397,7 +397,7 @@ func newParenthetical() *parenthetical {
 	return &parenthetical{tmp: "tmp"}
 }
 
-//BufferType contains strings
+// BufferType contains strings
 type BufferType struct {
 	Val string
 }
@@ -406,12 +406,12 @@ func newBufferType(val string) *BufferType {
 	return &BufferType{Val: val}
 }
 
-//Name implements IrType Name()
+// Name implements IrType Name()
 func (b *BufferType) Name() string {
 	return bufferTypeName
 }
 
-//String implements IrType String()
+// String implements IrType String()
 func (b *BufferType) String() string {
 	return fmt.Sprintf("Buffer: %s with length: %d\n", b.Val, len(b.Val))
 }
@@ -435,13 +435,13 @@ func (i *intType) string() string {
 	return strconv.Itoa(int(i.Val))
 }
 
-//Flags contains set of flagTypes. Most of the time will contain just 1 element
+// Flags contains set of flagTypes. Most of the time will contain just 1 element
 type Flags []*flagType
 
-//Ints Contains set of intTypes. Most of the time will contain just 1 element
+// Ints Contains set of intTypes. Most of the time will contain just 1 element
 type Ints []*intType
 
-//NewIntsType - Constructor
+// NewIntsType - Constructor
 func NewIntsType(vals []int64) Ints {
 	var ints []*intType
 	for _, v := range vals {
@@ -450,11 +450,11 @@ func NewIntsType(vals []int64) Ints {
 	return ints
 }
 
-//Eval implements Expression's Eval()
+// Eval implements Expression's Eval()
 func (f Flags) Eval(target *prog.Target) uint64 {
 	if len(f) > 1 {
-		//It isn't safe to evaluate flags with more than one element.
-		//For example we can have a system call like rt_sigprocmask with argument
+		// It isn't safe to evaluate flags with more than one element.
+		// For example we can have a system call like rt_sigprocmask with argument
 		// [RTMIN RT_1]. Simply Or'ing the values is not correct. Right now we allow
 		// more than one just to parse these calls.
 		log.Fatalf("Cannot evaluate flags with more than one element")
@@ -465,12 +465,12 @@ func (f Flags) Eval(target *prog.Target) uint64 {
 	return 0
 }
 
-//Name implements IrType Name()
+// Name implements IrType Name()
 func (f Flags) Name() string {
 	return exprTypeName
 }
 
-//String implements IrType String()
+// String implements IrType String()
 func (f Flags) String() string {
 	if len(f) == 1 {
 		return f[0].string()
@@ -478,7 +478,7 @@ func (f Flags) String() string {
 	return ""
 }
 
-//Eval implements Expression's Eval()
+// Eval implements Expression's Eval()
 func (i Ints) Eval(target *prog.Target) uint64 {
 	if len(i) > 1 {
 		//We need to handle this case by case. We allow more than one elemnt
@@ -491,12 +491,12 @@ func (i Ints) Eval(target *prog.Target) uint64 {
 	return 0
 }
 
-//Name implements IrType Name()
+// Name implements IrType Name()
 func (i Ints) Name() string {
 	return exprTypeName
 }
 
-//String implements IrType String()
+// String implements IrType String()
 func (i Ints) String() string {
 	if len(i) == 1 {
 		return i[0].string()
@@ -531,13 +531,13 @@ func (f *flagType) string() string {
 	return f.Val
 }
 
-//PointerType holds pointers from strace e.g. NULL, 0x7f24234234, &2342342={...}
+// PointerType holds pointers from strace e.g. NULL, 0x7f24234234, &2342342={...}
 type PointerType struct {
 	Address uint64
 	Res     IrType
 }
 
-//NewPointerType - Constructor
+// NewPointerType - Constructor
 func NewPointerType(addr uint64, res IrType) *PointerType {
 	return &PointerType{Res: res, Address: addr}
 }
@@ -546,17 +546,17 @@ func nullPointer() (typ *PointerType) {
 	return &PointerType{Res: newBufferType(""), Address: 0}
 }
 
-//IsNull checks if pointer is null
+// IsNull checks if pointer is null
 func (p *PointerType) IsNull() bool {
 	return p.Address == 0
 }
 
-//Name implements IrType Name()
+// Name implements IrType Name()
 func (p *PointerType) Name() string {
 	return pointerTypeName
 }
 
-//String implements IrType String()
+// String implements IrType String()
 func (p *PointerType) String() string {
 	buf := new(bytes.Buffer)
 	fmt.Fprintf(buf, "Address: %d\n", p.Address)
