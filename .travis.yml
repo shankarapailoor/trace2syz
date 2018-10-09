@@ -12,5 +12,4 @@ before_install:
 
 script:
   - make
-  - make linter
   - make test
