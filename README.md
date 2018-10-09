@@ -1,6 +1,7 @@
 # trace2syz
 
 [![Go Report Card](https://goreportcard.com/badge/github.com/shankarapailoor/trace2syz)](https://goreportcard.com/report/github.com/shankarapailoor/trace2syz)
+
 Hi! This is tool converts strace output to Syzkaller programs. It is adapted from MoonShine which can be found [here](https://github.com/shankarapailoor/moonshine). 
 
 # Getting Started
