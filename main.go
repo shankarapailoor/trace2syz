@@ -41,8 +41,8 @@ func main() {
 }
 
 func parseTraces(target *prog.Target) []*proggen.Context {
-	ret := make([]*proggen.Context, 0)
-	names := make([]string, 0)
+	var ret []*proggen.Context
+	var names []string
 
 	if *flagFile != "" {
 		names = append(names, *flagFile)
@@ -96,7 +96,7 @@ func progIsTooLarge(p *prog.Prog) bool {
 }
 
 func getTraceFiles(dir string) []string {
-	names := make([]string, 0)
+	var names []string
 	infos, err := ioutil.ReadDir(dir)
 	if err != nil {
 		log.Fatalf("Failed to read dir: %s", err.Error())

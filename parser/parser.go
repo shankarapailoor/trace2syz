@@ -25,15 +25,14 @@ func parseCoverage(line string) []uint64 {
 	for _, ins := range ips {
 		if strings.TrimSpace(ins) == "" {
 			continue
-		} else {
-			ip, err := strconv.ParseUint(strings.TrimSpace(ins), 0, 64)
-			if err != nil {
-				log.Fatalf("failed parsing instruction: %s", ins)
-			}
-			if _, ok := coverSet[ip]; !ok {
-				coverSet[ip] = true
-				cover = append(cover, ip)
-			}
+		}
+		ip, err := strconv.ParseUint(strings.TrimSpace(ins), 0, 64)
+		if err != nil {
+			log.Fatalf("failed parsing instruction: %s", ins)
+		}
+		if _, ok := coverSet[ip]; !ok {
+			coverSet[ip] = true
+			cover = append(cover, ip)
 		}
 	}
 	return cover
@@ -63,23 +62,22 @@ func ParseLoop(data string) (tree *TraceTree) {
 		shouldSkip := restart || signalPlus || signalMinus
 		if shouldSkip {
 			continue
-		} else if strings.Contains(line, coverID) {
+		}
+		if strings.Contains(line, coverID) {
 			cover := parseCoverage(line)
 			log.Logf(4, "Cover: %d", len(cover))
 			lastCall.Cover = cover
 			continue
-
-		} else {
-			log.Logf(4, "Scanning call: %s", line)
-			ret, call := parseSyscall(scanner)
-			if ret != 0 {
-				log.Fatalf("Error parsing line: %s", line)
-			}
-			if call == nil {
-				log.Fatalf("Failed to parse line: %s", line)
-			}
-			lastCall = tree.add(call)
 		}
+		log.Logf(4, "Scanning call: %s", line)
+		ret, call := parseSyscall(scanner)
+		if ret != 0 {
+			log.Fatalf("Error parsing line: %s", line)
+		}
+		if call == nil {
+			log.Fatalf("Failed to parse line: %s", line)
+		}
+		lastCall = tree.add(call)
 	}
 	if len(tree.Ptree) == 0 {
 		return nil
@@ -89,13 +87,10 @@ func ParseLoop(data string) (tree *TraceTree) {
 
 // Parse parses a trace of system calls and returns an intermediate representation
 func Parse(filename string) *TraceTree {
-	var data []byte
-	var err error
-
-	if data, err = ioutil.ReadFile(filename); err != nil {
+	data, err := ioutil.ReadFile(filename)
+	if err != nil {
 		log.Fatalf("error reading file: %s", err.Error())
 	}
-
 	tree := ParseLoop(string(data))
 	if tree != nil {
 		tree.Filename = filename

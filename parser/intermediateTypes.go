@@ -15,7 +15,6 @@ const (
 	orOp       = iota // OR = |
 	andOp             // AND = &
 	xorOp             // XOR = ^
-	notOp             // NOT = !
 	lshiftOp          // LSHIFT = <<
 	rshiftOp          // RSHIFT = >>
 	onescompOp        // ONESCOMP = ~
@@ -29,7 +28,6 @@ const (
 	callTypeName    string = "Call Type"
 	bufferTypeName  string = "Buffer Type"
 	pointerTypeName string = "Pointer Type"
-	flagTypeName    string = "Flag Type"
 )
 
 // TraceTree struct contains intermediate representation of trace
@@ -73,14 +71,6 @@ func (tree *TraceTree) add(call *Syscall) *Syscall {
 		tree.Ptree[c.Pid] = append(tree.Ptree[c.Pid], c.Ret)
 	}
 	return c
-}
-
-func (tree *TraceTree) string() string {
-	var buf bytes.Buffer
-
-	buf.WriteString(fmt.Sprintf("Root: %d\n", tree.RootPid))
-	buf.WriteString(fmt.Sprintf("Pids: %d\n", len(tree.TraceMap)))
-	return buf.String()
 }
 
 // Trace is just a list of system calls
@@ -140,8 +130,8 @@ func NewSyscall(pid int64, name string, args []IrType, ret int64, paused, resume
 func (s *Syscall) String() string {
 	buf := new(bytes.Buffer)
 
-	fmt.Fprintf(buf, "Pid: %d-", s.Pid)
-	fmt.Fprintf(buf, "Name: %s-", s.CallName)
+	fmt.Fprintf(buf, "Pid: -%v-", s.Pid)
+	fmt.Fprintf(buf, "Name: -%v-", s.CallName)
 	for _, typ := range s.Args {
 		buf.WriteString("-")
 		buf.WriteString(typ.String())
@@ -427,10 +417,6 @@ func (i *intType) eval(target *prog.Target) uint64 {
 	return uint64(i.Val)
 }
 
-func (i *intType) name() string {
-	return "Int Type"
-}
-
 func (i *intType) string() string {
 	return strconv.Itoa(int(i.Val))
 }
@@ -521,10 +507,6 @@ func (f *flagType) eval(target *prog.Target) uint64 {
 	}
 	log.Fatalf("Failed to eval flag: %s\n", f.string())
 	return 0
-}
-
-func (f *flagType) name() string {
-	return flagTypeName
 }
 
 func (f *flagType) string() string {
