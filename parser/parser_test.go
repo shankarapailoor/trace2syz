@@ -1,7 +1,14 @@
 package parser
 
 import (
+	"github.com/google/syzkaller/prog"
+	_ "github.com/google/syzkaller/sys"
 	"testing"
+)
+
+var (
+	OS   = "linux"
+	Arch = "amd64"
 )
 
 func TestParseLoopBasic(t *testing.T) {
@@ -145,6 +152,37 @@ func TestParseIrTypes(t *testing.T) {
 		call := tree.TraceMap[tree.RootPid].Calls[0]
 		if call.Args[0].Name() != test.irType {
 			t.Fatalf("Failed test %d. Expected %s != %s", i, test.irType, call.Args[0].Name())
+		}
+	}
+}
+
+func TestEvalFlags(t *testing.T) {
+	target, err := prog.GetTarget(OS, Arch)
+	if err != nil {
+		t.Fatalf("Failed to load target %s\n", err)
+	}
+	type desc struct {
+		test         string
+		expectedEval uint64
+	}
+	tests := []desc{
+		{test: `open(AT_FDCWD) = 0`, expectedEval: 18446744073709551516},
+		{test: `open([BUS ALRM IO]) = 0`, expectedEval: 10 | 14 | 23},
+		{test: `open([BUS]) = 0`, expectedEval: 10},
+	}
+	for i, test := range tests {
+		tree := ParseLoop(test.test)
+		call := tree.TraceMap[tree.RootPid].Calls[0]
+		var expr Expression
+		switch a := call.Args[0].(type) {
+		case *GroupType:
+			expr = a.Elems[0].(Expression)
+		case Expression:
+			expr = a
+		}
+		flagEval := expr.Eval(target)
+		if test.expectedEval != flagEval {
+			t.Fatalf("Incorrect Flag Evaluation for Test %d. Expected %v != %v", i, test.expectedEval, flagEval)
 		}
 	}
 }

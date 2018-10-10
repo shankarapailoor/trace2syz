@@ -86,6 +86,38 @@ func TestParseTraceInnerResource(t *testing.T) {
 	}
 }
 
+func TestDistinguishResourceTypes(t *testing.T) {
+	test := `inotify_init() = 2` + "\n" +
+		`open("tmp", O_RDONLY|O_CLOEXEC) = 3` + "\n" +
+		`inotify_add_watch(3, "\x2e", 0xfff) = 3` + "\n" +
+		`write(3, "temp", 5) = 5` + "\n" +
+		`inotify_rm_watch(2, 3) = 0`
+	expected := []string{"mmap", "inotify_init", "open", "inotify_add_watch", "write", "inotify_rm_watch"}
+	p := parseSingleTrace(t, test).Prog
+	err := testMatchingCallSequence(p.Calls, expected)
+	if err != nil {
+		t.Fatalf("%s\n", err)
+	}
+	write := p.Calls[len(p.Calls)-2]
+	inotifyRmWatch := p.Calls[len(p.Calls)-1]
+	switch a := write.Args[0].Type().(type) {
+	case *prog.ResourceType:
+		if a.TypeName != "fd" {
+			t.Fatalf("Expected first argument of write to have type fd. Got: %s", a.TypeName)
+		}
+	default:
+		t.Fatalf("First argument of write is not resource type. Is: %s", a.Name())
+	}
+	switch a := inotifyRmWatch.Args[1].Type().(type) {
+	case *prog.ResourceType:
+		if a.TypeName != "inotifydesc" {
+			t.Fatalf("Expected second argument of inotify_rm_watch to have type inoitfydesc. Got: %s", a.TypeName)
+		}
+	default:
+		t.Fatalf("First argument of write is not resource type. Is: %s", a.Name())
+	}
+}
+
 func TestSocketLevel(t *testing.T) {
 	test := `socket(AF_UNIX, SOCK_STREAM, 0) = 3` + "\n" +
 		`socket(AF_UNIX, SOCK_STREAM | SOCK_NONBLOCK, 0) = 3` + "\n" +

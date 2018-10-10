@@ -438,17 +438,14 @@ func NewIntsType(vals []int64) Ints {
 
 // Eval implements Expression's Eval()
 func (f Flags) Eval(target *prog.Target) uint64 {
-	if len(f) > 1 {
-		// It isn't safe to evaluate flags with more than one element.
-		// For example we can have a system call like rt_sigprocmask with argument
-		// [RTMIN RT_1]. Simply Or'ing the values is not correct. Right now we allow
-		// more than one just to parse these calls.
-		log.Fatalf("Cannot evaluate flags with more than one element")
+	a := make([]*flagType, len(f))
+	copy(a, f)
+	val := uint64(0)
+	for len(a) > 0 {
+		val |= a[0].eval(target)
+		a = a[1:]
 	}
-	if len(f) == 1 {
-		return f[0].eval(target)
-	}
-	return 0
+	return val
 }
 
 // Name implements IrType Name()
@@ -458,10 +455,16 @@ func (f Flags) Name() string {
 
 // String implements IrType String()
 func (f Flags) String() string {
-	if len(f) == 1 {
-		return f[0].string()
+	a := make([]*flagType, len(f))
+	var buf bytes.Buffer
+	copy(a, f)
+	for len(a) > 1 {
+		buf.WriteString(a[0].string())
+		buf.WriteString(" ")
+		a = a[1:]
 	}
-	return ""
+	buf.WriteString(a[0].string())
+	return buf.String()
 }
 
 // Eval implements Expression's Eval()
