@@ -95,7 +95,7 @@ func (ctx *Context) FillOutMemory() error {
 	totalMemory := ctx.Tracker.getTotalMemoryAllocations(ctx.Prog)
 	log.Logf(2, "Total memory for program is: %d", totalMemory)
 	if totalMemory == 0 {
-		log.Logf(1, "Program requires no mmaps", totalMemory)
+		log.Logf(1, "Program requires no mmaps. Total memory: %d", totalMemory)
 		return nil
 	}
 	mmapCall := ctx.Target.MakeMmap(0, totalMemory)
