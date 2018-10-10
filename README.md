@@ -1,6 +1,6 @@
 # trace2syz
 
-[![Go Report Card](https://goreportcard.com/badge/github.com/shankarapailoor/trace2syz)](https://goreportcard.com/report/github.com/shankarapailoor/trace2syz)
+[![Build Status](https://travis-ci.org/shankarapailoor/trace2syz.svg?branch=master)](https://travis-ci.org/shankarapailoor/trace2syz) [![Go Report Card](https://goreportcard.com/badge/github.com/shankarapailoor/trace2syz)](https://goreportcard.com/report/github.com/shankarapailoor/trace2syz)
 
 Hi! This is tool converts strace output to Syzkaller programs. It is adapted from MoonShine which can be found [here](https://github.com/shankarapailoor/moonshine). 
 
@@ -48,11 +48,11 @@ make
 ```
 
 ### Run
-Once MoonShine has been successfully built, we can generate seeds for Syzkaller as follows:
+Once trace2syz has been successfully built, we can generate seeds for Syzkaller as follows:
 
 ```bash
 $ ./bin/trace2syz -dir [tracedir] -distill [distillConfig.json]
 ```
 The arguments are explained below:
 * ```-dir``` is a directory for traces to be parsed. We have provided a tarball of sample traces on [Google Drive](https://drive.google.com/file/d/1eKLK9Kvj5tsJVYbjB2PlFXUsMQGASjmW/view?usp=sharing) to get started. To run the [example](#example) below, download the tarball, move it to the ```getting-started/``` directory, and unpack. 
-* ```-distill``` is a config file that specifies the distillation strategy (e.g. implicit, explicit only). If the traces don't have call coverage information or you simply don't want to distill, then this parameter should be ommitted and MoonShine will generate traces "as is". We have provided an example config under ```getting-started/distill.json```
+* ```-distill``` is a config file that specifies the distillation strategy (e.g. implicit, explicit only). If the traces don't have call coverage information or you simply don't want to distill, then this parameter should be ommitted and trace2syz will generate traces "as is". We have provided an example config under ```getting-started/distill.json```
