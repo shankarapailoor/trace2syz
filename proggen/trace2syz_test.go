@@ -137,14 +137,14 @@ func TestIdentifySockaddrStorage(t *testing.T) {
 		ArgIdx    int
 		FieldName string
 	}
-	test1 := `open("\x2f\x64\x65\x76\x2f\x6e\x75\x6c\x6c", O_WRONLY) = 3` + "\n" +
+	test1 := `open("temp", O_WRONLY) = 3` + "\n" +
 		`connect(3, {sa_family=AF_INET, sin_port=htons(37957), sin_addr=inet_addr("0.0.0.0")}, 16) = -1`
-	test2 := `open("\x2f\x64\x65\x76\x2f\x6e\x75\x6c\x6c", O_WRONLY) = 3` + "\n" +
+	test2 := `open("temp", O_WRONLY) = 3` + "\n" +
 		`connect(6, {sa_family=AF_INET6, sin6_port=htons(8888), inet_pton(AF_INET6, "::1", &sin6_addr),` +
 		`sin6_flowinfo=htonl(4286513152), sin6_scope_id=0}, 128) = 0`
-	test3 := `open("\x2f\x64\x65\x76\x2f\x6e\x75\x6c\x6c", O_WRONLY) = 3` + "\n" +
-		`connect(3, {sa_family=AF_UNIX, sun_path="\x2f"}, 110) = -1`
-	test4 := `open("\x2f\x64\x65\x76\x2f\x6e\x75\x6c\x6c", O_WRONLY) = 3` + "\n" +
+	test3 := `open("temp", O_WRONLY) = 3` + "\n" +
+		`connect(3, {sa_family=AF_UNIX, sun_path="temp"}, 110) = -1`
+	test4 := `open("temp", O_WRONLY) = 3` + "\n" +
 		`bind(5, {sa_family=AF_NETLINK, nl_pid=0, nl_groups=00000000}, 12)  = -1`
 	tests := []string{test1, test2, test3, test4}
 	expected := [][]string{
@@ -196,7 +196,7 @@ func TestIdentifyIfru(t *testing.T) {
 		`ioctl(3, SIOCGIFHWADDR, {ifr_name="\x6c\x6f", ifr_hwaddr=00:00:00:00:00:00}) = 0`
 	tests := []string{test}
 	expected := [][]string{
-		{"mmap", "socket$packet", "ioctl$SIOCGIFHWADDR"},
+		{"mmap", "socket$packet", "ioctl$sock_ifreq"},
 	}
 	for i, test := range tests {
 		p := parseSingleTrace(t, test).Prog
@@ -209,7 +209,7 @@ func TestIdentifyIfru(t *testing.T) {
 
 func TestParseVariants(t *testing.T) {
 	test1 := `socket(AF_UNIX, SOCK_STREAM, 0) = 3` + "\n" +
-		`connect(3, {sa_family=AF_UNIX, sun_path="\x2f\x76"}, 110) = -1 ENOENT (Bad file descriptor)`
+		`connect(3, {sa_family=AF_UNIX, sun_path="temp"}, 110) = -1 ENOENT (Bad file descriptor)`
 	test2 := `socket(AF_UNIX, SOCK_STREAM, 0) = 3`
 	test3 := `socket(AF_INET, SOCK_STREAM, IPPROTO_IP) = 5` + "\n" +
 		`ioctl(5, FIONBIO, [1]) = 0`
@@ -219,7 +219,7 @@ func TestParseVariants(t *testing.T) {
 		`setsockopt(3, SOL_SOCKET, SO_REUSEADDR, [1], 4) = 0`
 	test6 := `9795  socket(AF_PACKET, SOCK_RAW, 768)  = 3` + "\n" +
 		`9795  ioctl(3, SIOCGIFINDEX, {ifr_name="\x6c\x6f", }) = 0`
-	test7 := `open("\x2f\x64\x65\x76\x2f\x6e\x75\x6c\x6c", O_WRONLY) = 3` + "\n" +
+	test7 := `open("temp", O_WRONLY) = 3` + "\n" +
 		`connect(3, {sa_family=AF_INET, sin_port=htons(37957), sin_addr=inet_addr("0.0.0.0")}, 16) = -1`
 	tests := []string{test1, test2, test3, test4, test5, test6, test7}
 	expected := [][]string{

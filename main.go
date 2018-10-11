@@ -32,7 +32,7 @@ func main() {
 	flag.Parse()
 	target, err := prog.GetTarget(goos, arch)
 	if err != nil {
-		log.Fatalf("error getting target: %v", err.Error())
+		log.Fatalf("Failed to load target: %s", err)
 	}
 	variantMap.Build(target)
 	parseTraces(target)

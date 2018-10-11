@@ -26,7 +26,8 @@ type CallVariantMap struct {
 	Fcntl           map[uint64]string
 	Bpf             map[uint64]string
 	Socket          map[sock]string
-	Ioctl           map[uint64]string
+	SocketPair      map[sock]string
+	Ioctl           map[pair]string
 	GetSetsockopt   map[pair]string
 	ConnectionCalls map[string]string //accept, bind, connect
 }
@@ -46,18 +47,28 @@ func buildVariantMap1Field(variants []*prog.Syscall, callMap map[uint64]string, 
 	}
 }
 
-func (c *CallVariantMap) addSocket(key sock, val string, target *prog.Target) {
+func addSocketOrPair(socketOrPairMap map[sock]string, key sock, val string, target *prog.Target) {
 	level := key.level
-	c.Socket[key] = val
+	socketOrPairMap[key] = val
 	key.level = level | target.ConstMap["SOCK_CLOEXEC"]
-	c.Socket[key] = val
+	socketOrPairMap[key] = val
 	key.level = level | target.ConstMap["SOCK_NONBLOCK"]
-	c.Socket[key] = val
+	socketOrPairMap[key] = val
 	key.level |= target.ConstMap["SOCK_CLOEXEC"]
-	c.Socket[key] = val
+	socketOrPairMap[key] = val
 }
 
-func (c *CallVariantMap) buildSocketMap(variants []*prog.Syscall, target *prog.Target) {
+//We unfortunately have to maintain separate maps for socketpair and socket. It seems that there are cases where
+//socketpair can have multiple variants for the same hash code but socket only has one variant. E.g.
+//socketpair$inet_tcp has the following arguments
+//      domain const[AF_INET], type const[SOCK_STREAM], proto const[0], fds ptr[out, tcp_pair]
+//and socketpair$nbd has the same first three:
+//      domain const[AF_INET], type const[SOCK_STREAM], proto const[0], fds ptr[out, nbd_sock_pair]
+// If we keep the variant maps the same for both calls then we may choose the variant $nbd for sockets. However,
+// such a variant doesn't exist so we should keep these variants separate.
+// However, both socket and socketpair are accessed the same way and the maps are virtually the same so this function
+// aggregates the logic.
+func buildSocketOrPairMap(socketOrPairMap map[sock]string, variants []*prog.Syscall, target *prog.Target) {
 	for _, variant := range variants {
 		suffix := strings.Split(variant.Name, "$")[1]
 		key := sock{}
@@ -69,20 +80,44 @@ func (c *CallVariantMap) buildSocketMap(variants []*prog.Syscall, target *prog.T
 		case *prog.ConstType:
 			key.protocol = a.Val
 		default:
+			//Essentially ignore this key if it is not constant and just choose
+			//the entry in the map that matches the first two arguments
 			key.protocol = ^uint64(0)
 		}
 		switch a := variant.Args[1].(type) {
 		case *prog.ConstType:
 			key.level = a.Val
-			c.addSocket(key, suffix, target)
+			addSocketOrPair(socketOrPairMap, key, suffix, target)
 		case *prog.FlagsType:
 			for _, val := range a.Vals {
 				key.level = val
-				if _, ok := c.Socket[key]; !ok {
-					c.addSocket(key, suffix, target)
+				if _, ok := socketOrPairMap[key]; !ok {
+					addSocketOrPair(socketOrPairMap, key, suffix, target)
 				}
 			}
 		}
+	}
+}
+
+func (c *CallVariantMap) buildIoctlMap(variants []*prog.Syscall) {
+	for _, variant := range variants {
+		resourceName := variant.Args[0].(*prog.ResourceType).TypeName
+		var p pair
+		switch a := variant.Args[1].(type) {
+		case *prog.ConstType:
+			p.A = resourceName
+			p.B = fmt.Sprint(a.Val)
+			c.Ioctl[p] = strings.Split(variant.Name, "$")[1]
+		case *prog.FlagsType:
+			for _, val := range a.Vals {
+				p.A = resourceName
+				p.B = fmt.Sprint(val)
+				if _, ok := c.Ioctl[p]; !ok {
+					c.Ioctl[p] = strings.Split(variant.Name, "$")[1]
+				}
+			}
+		}
+
 	}
 }
 
@@ -129,10 +164,12 @@ func (c *CallVariantMap) Build(target *prog.Target) {
 
 	for call, variants := range callVariants {
 		switch call {
-		case "socket", "socketpair":
-			c.buildSocketMap(variants, target)
+		case "socket":
+			buildSocketOrPairMap(c.Socket, variants, target)
+		case "socketpair":
+			buildSocketOrPairMap(c.SocketPair, variants, target)
 		case "ioctl":
-			buildVariantMap1Field(variants, c.Ioctl, 1)
+			c.buildIoctlMap(variants)
 		case "bpf":
 			buildVariantMap1Field(variants, c.Bpf, 0)
 		case "fcntl":
@@ -151,7 +188,8 @@ func NewCall2VariantMap() (c *CallVariantMap) {
 		Fcntl:           make(map[uint64]string),
 		Bpf:             make(map[uint64]string),
 		Socket:          make(map[sock]string),
-		Ioctl:           make(map[uint64]string),
+		SocketPair:      make(map[sock]string),
+		Ioctl:           make(map[pair]string),
 		GetSetsockopt:   make(map[pair]string),
 		ConnectionCalls: make(map[string]string),
 	}
@@ -186,7 +224,7 @@ var preprocessMap = map[string]preprocessHook{
 	"setsockopt":  getSetsockoptCalls,
 	"shmctl":      shmctl,
 	"socket":      socket,
-	"socketpair":  socket,
+	"socketpair":  socketpair,
 	"shmget":      shmget,
 }
 
@@ -209,11 +247,46 @@ func socket(ctx *Context) {
 	}
 }
 
-func ioctl(ctx *Context) {
-	cmd := ctx.CurrentStraceCall.Args[1].(parser.Expression)
-	val := cmd.Eval(ctx.Target)
-	if name, ok := ctx.Call2Variant.Ioctl[val]; ok {
+func socketpair(ctx *Context) {
+	val1 := ctx.CurrentStraceCall.Args[0].(parser.Expression).Eval(ctx.Target)
+	val2 := ctx.CurrentStraceCall.Args[1].(parser.Expression).Eval(ctx.Target)
+	val3 := ctx.CurrentStraceCall.Args[2].(parser.Expression).Eval(ctx.Target)
+	key := sock{val1, val2, val3}
+	if _, ok := ctx.Call2Variant.SocketPair[key]; !ok {
+		key.protocol = ^uint64(0)
+	}
+	if suffix, ok := ctx.Call2Variant.SocketPair[key]; ok {
+		name := ctx.CurrentStraceCall.CallName + "$" + suffix
 		ctx.CurrentSyzCall.Meta = ctx.Target.SyscallMap[name]
+	}
+}
+
+func ioctl(ctx *Context) {
+	var arg prog.Arg
+	var fdType string
+	straceFd := ctx.CurrentStraceCall.Args[0]
+	syzFd := ctx.CurrentSyzCall.Meta.Args[0]
+	if arg = ctx.ReturnCache.get(syzFd, straceFd); arg == nil {
+		return
+	}
+	switch a := arg.Type().(type) {
+	case *prog.ResourceType:
+		// Start with most descriptive type and see if there is a match
+		// Then work backwards to more general resource types
+		var suffix string
+		var p pair
+		for i := len(a.Desc.Kind) - 1; i > -1; i-- {
+			fdType = a.Desc.Kind[i]
+			val := ctx.CurrentStraceCall.Args[1].(parser.Expression).Eval(ctx.Target)
+			p.A = fdType
+			p.B = fmt.Sprint(val)
+			if suffix = ctx.Call2Variant.Ioctl[p]; suffix == "" {
+				continue
+			}
+			syzName := ctx.CurrentStraceCall.CallName + "$" + suffix
+			ctx.CurrentSyzCall.Meta = ctx.Target.SyscallMap[syzName]
+			return
+		}
 	}
 }
 
