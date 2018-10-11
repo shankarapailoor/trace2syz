@@ -161,6 +161,8 @@ var (
 		"X_OK":                                                1,
 		"F_OK":                                                0,
 		"F_OFD_SETLKW":                                        38,
+		"F_OFD_GETLK":                                         36,
+		"F_OFD_SETLK":                                         37,
 		"O_ACCMODE":                                           3,
 		"SIGRTMIN":                                            32,
 		"SCHED_OTHER":                                         0,
@@ -256,6 +258,6 @@ var (
 		"SNDCTL_TMR_TEMPO":     3221509125,
 		"SNDCTL_TMR_SOURCE":    3221509126,
 		"SNDCTL_TMR_METRONOME": 1074025479,
-		"SNDCTL_TMP_SELECT":    1074025480,
+		"SNDCTL_TMR_SELECT":    1074025480,
 	}
 )
